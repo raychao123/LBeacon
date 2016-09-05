@@ -39,6 +39,8 @@ void *DeviceCleaner(void); //prototype for clean the device by time
 //struct xbee_pkt **Global_pkt;
 int xbee_pkt_count = 0;
 sem_t ndComplete;
+//TCP/IP parameters
+int sockfd, portno;
 /* IP table: |Location|GatewayIpv4|Beacon address|Tx Power| */
 
 /*********************************************************************
@@ -72,6 +74,39 @@ Beacon_IP_table IpTable[255];//storage is max to 255's Beacons address
 int ZigBee_addr_Scan_count=0;
 
 /*********************************************************************
+ * Parser FUNCTIONS
+ */
+void COMM_Parser(char COMM)
+{
+    switch COMM
+    {
+        case 0x11:
+            //function of send file
+            break;
+        case 0x12:
+            //emergency state change
+            break;
+        case 0x13:
+            //coordinate change
+            break;
+        case 0x14:
+            //Timing
+            break;
+        case 0x15:
+            //Fetch IP table(gateway)
+            break; 
+        case 0x16:
+            //live or not rsp
+            break;
+
+
+
+
+    }
+
+
+}
+/*********************************************************************
  * InterNet FUNCTIONS
  */
  void error(char *msg)
@@ -79,13 +114,13 @@ int ZigBee_addr_Scan_count=0;
     perror(msg);
     exit(0);
 }
-void TCPConnect(char port[],char hostname[])
+void TCPinit(char port[],char hostname[])
 {
-int sockfd, portno, n;
+
 
     struct sockaddr_in serv_addr;
     struct hostent *server;
-    char buffer[256];
+    //char buffer[256];
     portno = atoi(port);
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
@@ -104,20 +139,41 @@ int sockfd, portno, n;
     serv_addr.sin_port = htons(portno);
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
         error("ERROR connecting");
-    printf("Please enter the message: ");
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
-    if (n < 0) 
-         error("ERROR writing to socket");
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0) 
-         error("ERROR reading from socket");
-    printf("%s\n",buffer);
+    //printf("Please enter the message: ");
+    //bzero(buffer,256);
+    //fgets(buffer,255,stdin);
+    //n = write(sockfd,buffer,strlen(buffer));
+    //if (n < 0) 
+    //     error("ERROR writing to socket");
+    //bzero(buffer,256);
+    //n = read(sockfd,buffer,255);
+    //if (n < 0) 
+    //     error("ERROR reading from socket");
+    //printf("%s\n",buffer);
     return;
 
     
+}
+void *T_TCP_Receiver(void)
+{
+    int n;
+    char buffer[256];
+    char COMM_TYPE[2];
+    while(true)
+    {
+        bezero(COMM_TYPE,2);
+        n = read(sockfd,COMM_TYPE,1);
+        if (n<0)
+            error("ERROR reading from socket");
+        COMM_Parser(COMM_TYPE[0]);
+
+    }
+
+
+
+
+
+    return;
 }
 
 
