@@ -22,16 +22,28 @@
 #include <errno.h>
 #include <time.h>
 #include <xbee.h>
+#include <limits.h>  
 #define MAX_OF_DEVICE 30 //max number of device to storage
 #define NTHREADS 30    //max number of threads used in multithreading
 #define PUSHDONGLES 2
 #define NUMBER_OF_DEVICE_IN_EACH_PUSHDONGLE 9
 #define BLOCKOFDONGLE 5
 #define IDLE         -1
+#define GATEWAY       1
+#define BEACON        0
+//***************Parser define********************
+#define S_IPTABLE 0x30
+
 const long long Timeout = 20000; // TimeOut in 20s
 char addr[30][18] = { 0 };
 char addrbufferlist[PUSHDONGLES * NUMBER_OF_DEVICE_IN_EACH_PUSHDONGLE][18] = { 0 };
+char *filepath="/home/pi/a.txt";
+char *filepath1="/home/pi/a.txt";
+char *filepath2="/home/pi/b.txt";
+char *filepath3="/home/pi/a.jpg";
+char *filepath4="/home/pi/b.jpg";
 int IdleHandler[PUSHDONGLES * NUMBER_OF_DEVICE_IN_EACH_PUSHDONGLE] = {0};
+int Beacon_Type = -1;
 pthread_t thread_id[NTHREADS] = {0};
 void *send_file(void *address); //prototype for the file sending function used in the new thread
 void *DeviceCleaner(void); //prototype for clean the device by time
@@ -42,7 +54,11 @@ sem_t ndComplete;
 //TCP/IP parameters
 int sockfd, portno;
 /* IP table: |Location|GatewayIpv4|Beacon address|Tx Power| */
-
+struct xbee *xbee;
+void *d;
+struct xbee_con *con;
+struct xbee_conAddress address;
+struct xbee_conSettings settings;
 /*********************************************************************
  * TYPEDEFS
  */
@@ -60,51 +76,75 @@ typedef struct {
     char DeviceUsed[MAX_OF_DEVICE];
 
 } DeviceQueue;
+typedef struct 
+{
+    unsigned char COMM;
+    unsigned char data[64];
+    int Packagelen;
+    int Datalen;
+    int count;
+    /* data */
+} DataPackage;
 DeviceQueue UsedDeviceQueue;
 /*-----------------------IP table-----------------------*/
 typedef struct 
 {
-    int coordinate[3];
-    char GatewayIP[4];
+    float coordinate[3];
+    char GatewayIP[14];
     /* SH = 0xXX XX XX XX SL = 0xXX XX XX XX*/
     struct xbee_conAddress address;
     int TxPower;
 }Beacon_IP_table;
 Beacon_IP_table IpTable[255];//storage is max to 255's Beacons address
 int ZigBee_addr_Scan_count=0;
-
+struct xbee_conAddress Gatewayaddr;
 /*********************************************************************
  * Parser FUNCTIONS
  */
-void COMM_Parser(char COMM)
+void COMM_Parser(unsigned char *COMM,int len,unsigned char* data)
 {
-    switch COMM
+    struct xbee_conAddress ZigBee_address;
+    Beacon_IP_table rcv_Iptable;
+    int n,i;
+    switch (COMM[0])
     {
-        case 0x11:
-            //function of send file
+        case 's'://switch message
+            if(Beacon_Type==GATEWAY)
+            {
+                 printf("%s\n",COMM );
+            xbee_conTx(con, NULL,COMM);
+            }
+            else if(Beacon_Type==BEACON)
+            {
+                printf("%s\n",COMM );
+                switch (COMM[9])
+                {   
+                    case 'a':
+                        filepath = filepath1;
+                        break;
+                    case 'b':
+                        filepath = filepath2;
+                        break;
+                    case 'c':
+                        filepath = filepath3;
+                        break;
+                    case 'd':
+                        filepath = filepath4;
+                        break;
+
+
+                };
+
+            }
+
             break;
-        case 0x12:
-            //emergency state change
-            break;
-        case 0x13:
-            //coordinate change
-            break;
-        case 0x14:
-            //Timing
-            break;
-        case 0x15:
-            //Fetch IP table(gateway)
-            break; 
-        case 0x16:
-            //live or not rsp
-            break;
+        
 
 
 
+    };
 
-    }
-
-
+return;
 }
 /*********************************************************************
  * InterNet FUNCTIONS
@@ -112,7 +152,7 @@ void COMM_Parser(char COMM)
  void error(char *msg)
 {
     perror(msg);
-    exit(0);
+    //exit(0);
 }
 void TCPinit(char port[],char hostname[])
 {
@@ -120,16 +160,20 @@ void TCPinit(char port[],char hostname[])
 
     struct sockaddr_in serv_addr;
     struct hostent *server;
-    //char buffer[256];
     portno = atoi(port);
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) 
+    if (sockfd < 0)
+    {
         error("ERROR opening socket");
+        Beacon_Type = BEACON;
+
+    }
     //140.109.17.72
     server = gethostbyname(hostname);
     if (server == NULL) {
         fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
+        Beacon_Type = BEACON;
+        return;
     }
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -138,51 +182,104 @@ void TCPinit(char port[],char hostname[])
          server->h_length);
     serv_addr.sin_port = htons(portno);
     if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
+    {
         error("ERROR connecting");
-    //printf("Please enter the message: ");
-    //bzero(buffer,256);
-    //fgets(buffer,255,stdin);
-    //n = write(sockfd,buffer,strlen(buffer));
-    //if (n < 0) 
-    //     error("ERROR writing to socket");
-    //bzero(buffer,256);
-    //n = read(sockfd,buffer,255);
-    //if (n < 0) 
-    //     error("ERROR reading from socket");
-    //printf("%s\n",buffer);
+        Beacon_Type = BEACON;
+        return;
+    }
+    Beacon_Type = GATEWAY;
     return;
 
     
 }
+ void myCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **data) {
+    //if ((*pkt)->dataLen > 0) {
+        printf("rx: [%s]\n", (*pkt)->data);
+        COMM_Parser((*pkt)->data,sizeof((*pkt)->data),NULL);
+        //xbee_conCallbackSet(con, NULL, NULL);
+   // }
+   
+}
+
 void *T_TCP_Receiver(void)
 {
     int n;
-    char buffer[256];
-    char COMM_TYPE[2];
-    while(true)
-    {
-        bezero(COMM_TYPE,2);
-        n = read(sockfd,COMM_TYPE,1);
-        if (n<0)
-            error("ERROR reading from socket");
-        COMM_Parser(COMM_TYPE[0]);
-
+    int len;
+    unsigned char buffer[16];
+    xbee_err ret;
+    if ((ret = xbee_setup(&xbee, "xbee2", "/dev/ttyUSB0", 9600)) != XBEE_ENONE) {
+        printf("ret: %d (%s)\n", ret, xbee_errorToStr(ret));
+     return;
     }
 
+    memset(&address, 0, sizeof(address));
+    address.addr64_enabled = 1;
+    address.addr64[0] = 0x00;
+    address.addr64[1] = 0x00;
+    address.addr64[2] = 0x00;
+    address.addr64[3] = 0x00;
+    address.addr64[4] = 0x00;
+    address.addr64[5] = 0x00;
+    address.addr64[6] = 0xFF;
+    address.addr64[7] = 0xFF;
+    if ((ret = xbee_conNew(xbee, &con, "Data", &address)) != XBEE_ENONE) {
+        xbee_log(xbee, -1, "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
+       return;
+    }
+   
+    if ((ret = xbee_conCallbackSet(con, myCB, NULL)) != XBEE_ENONE) {
+        xbee_log(xbee, -1, "xbee_conCallbackSet() returned: %d", ret);
+       return;
+    }
+    
+    /* getting an ACK for a broadcast message is kinda pointless... */
+    xbee_conSettings(con, NULL, &settings);
+    settings.disableAck = 1;
+    xbee_conSettings(con, &settings, NULL);
+    xbee_conTx(con, NULL,"setup");
+    /*
+        for(;;){
+        void *p;
+
+        if ((ret = xbee_conCallbackGet(con, (xbee_t_conCallback*)&p)) != XBEE_ENONE) {
+            xbee_log(xbee, -1, "xbee_conCallbackGet() returned: %d", ret);
+            return;
+        }
+
+        if (p == NULL) break;
+    }
+
+    if ((ret = xbee_conEnd(con)) != XBEE_ENONE) {
+        xbee_log(xbee, -1, "xbee_conEnd() returned: %d", ret);
+        return;
+    }
+     */
 
 
-
-
+    while(1)
+    {
+          if(Beacon_Type == GATEWAY){
+        //bzero(COMM_TYPE,2);
+        n = read(sockfd,&len,sizeof(len));
+        if (n < 0)
+            error("ERROR reading from socket");
+        n = read(sockfd,buffer,16);
+        if (n < 0)
+            error("ERROR reading from socket");
+        usleep(20000);
+        printf("---------");
+        COMM_Parser(buffer,len,NULL);
+        }
+    }
+   xbee_shutdown(xbee);
     return;
 }
 
 
+
+
 /*********************************************************************
  * ZigBee FUNCTIONS
- */
-
- /*********************************************************************
- * ZigBee: Node Detect Callback
  */
 void nodeCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **data) {
     int i;
@@ -228,7 +325,7 @@ void nodeCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void
 int ZigBee_Node_dectet()
 {
 void *d;
-    struct xbee *xbee;
+    
     struct xbee_con *con;
     xbee_err ret;
     unsigned char txRet;
@@ -239,7 +336,7 @@ void *d;
         return -1;
     }
     
-    if ((ret = xbee_setup(&xbee, "xbee2", "/dev/ttyUSB1", 9600)) != XBEE_ENONE) {
+    if ((ret = xbee_setup(&xbee, "xbee2", "/dev/ttyUSB0", 9600)) != XBEE_ENONE) {
         printf("ret: %d (%s)\n", ret, xbee_errorToStr(ret));
         return ret;
     }
@@ -281,108 +378,23 @@ void *d;
 
     return 0;
 }
-
 /*********************************************************************
  * ZigBee: Send Data function
  */
-int ZigBeeSendData(struct xbee_conAddress address)
-{
-void *d;
-struct xbee *xbee;
-struct xbee_con *con;
-unsigned char txRet;
-xbee_err ret;
 
-    if ((ret = xbee_setup(&xbee, "xbee2", "/dev/ttyUSB1", 9600)) != XBEE_ENONE) {
-        printf("ret: %d (%s)\n", ret, xbee_errorToStr(ret));
-        return ret;
-    }
-    if ((ret = xbee_conNew(xbee, &con, "Data", &address)) != XBEE_ENONE) {
-        xbee_log(xbee, -1, "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
-        return ret;
-    }
-     xbee_conTx(con, NULL, "Hi!");//"Hi" need to fix!
-    
-    if ((ret = xbee_conEnd(con)) != XBEE_ENONE) {
-        xbee_log(xbee, -1, "xbee_conEnd() returned: %d", ret);
-        return ret;
-    }
+/*********************************************************************
+ * ZigBee: Broadcast function
+ */
 
-    xbee_shutdown(xbee);
 
-    return 0;
-
-}
 /*********************************************************************
  * ZigBee: Receive Data callback
  */
-void RcvCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **data) {
-   if ((*pkt)->dataLen > 0) {
-        printf("rx: [%s]\n", (*pkt)->data);
-        
-    }
-}
+
 /*********************************************************************
- * ZigBee: Send Data function
+ * ZigBee: Receive Data function
  */
- int ZigBeeReceiver(){
-    void *d;
-    struct xbee *xbee;
-    struct xbee_con *con;
-    struct xbee_conAddress address;
-    xbee_err ret;
 
-    if ((ret = xbee_setup(&xbee, "xbee2", "/dev/ttyUSB1", 9600)) != XBEE_ENONE) {
-        printf("ret: %d (%s)\n", ret, xbee_errorToStr(ret));
-        return ret;
-    }
-if ((ret = xbee_conNew(xbee, &con, "Data", &address)) != XBEE_ENONE) {
-        xbee_log(xbee, -1, "xbee_conNew() returned: %d (%s)", ret, xbee_errorToStr(ret));
-        return ret;
-    }
-
-    if ((ret = xbee_conDataSet(con, xbee, NULL)) != XBEE_ENONE) {
-        xbee_log(xbee, -1, "xbee_conDataSet() returned: %d", ret);
-        return ret;
-    }
-
-    if ((ret = xbee_conCallbackSet(con, RcvCB, NULL)) != XBEE_ENONE) {
-        xbee_log(xbee, -1, "xbee_conCallbackSet() returned: %d", ret);
-        return ret;
-    }
-
-
-    for (;;) {
-        void *p;
-
-        if ((ret = xbee_conCallbackGet(con, (xbee_t_conCallback*)&p)) != XBEE_ENONE) {
-            xbee_log(xbee, -1, "xbee_conCallbackGet() returned: %d", ret);
-            return ret;
-        }
-
-        if (p == NULL) break;
-
-        usleep(1000000);
-    }
-    if ((ret = xbee_conEnd(con)) != XBEE_ENONE) {
-        xbee_log(xbee, -1, "xbee_conEnd() returned: %d", ret);
-        return ret;
-    }
-
-    xbee_shutdown(xbee);
-
-    return 0;
-
-
- }
-
-
-void *ZigBeeNetwork(void)
-{
-
-
-
-}
 //gcc main.c -g -o main -I ../../../include/ -L ../../../lib -lxbee -lpthread -lrt
 /*********************************************************************
  * Bluetooth OBEX FUNCTIONS
@@ -512,7 +524,7 @@ static void scanner_start()
     struct pollfd p;
 
     //dev_id = hci_get_route(NULL);
-    dev_id = hci_devid("00:1A:7D:DA:71:11");
+    dev_id = hci_devid("00:1A:7D:DA:71:00");
     sock = hci_open_dev( dev_id );
     if (dev_id < 0 || sock < 0) {
         perror("Can't open socket");
@@ -529,10 +541,10 @@ static void scanner_start()
         return;
     }
     hci_write_inquiry_mode(sock, 0x01, 10);
-    //if (hci_send_cmd(sock, OGF_HOST_CTL, OCF_WRITE_INQUIRY_MODE, WRITE_INQUIRY_MODE_RP_SIZE, &cp) < 0) {
-    //  perror("Can't set inquiry mode");
-    // return;
-    //}
+    if (hci_send_cmd(sock, OGF_HOST_CTL, OCF_WRITE_INQUIRY_MODE, WRITE_INQUIRY_MODE_RP_SIZE, &cp) < 0) {
+      perror("Can't set inquiry mode");
+     return;
+    }
 
     memset (&cp, 0, sizeof(cp));
     cp.lap[2] = 0x9e;
@@ -579,7 +591,7 @@ static void scanner_start()
             case EVT_INQUIRY_RESULT_WITH_RSSI:
                 for (i = 0; i < results; i++) {
                     info_rssi = (void *)ptr + (sizeof(*info_rssi) * i) + 1;
-                    // print_result(&info_rssi->bdaddr, 1, info_rssi->rssi);
+                    print_result(&info_rssi->bdaddr, 1, info_rssi->rssi);
                     sendToPushDongle(&info_rssi->bdaddr, 1, info_rssi->rssi);
                     //printf("aa\n" );
                 }
@@ -606,18 +618,18 @@ void *send_file(void *ptr)
     char *address = NULL;
     int dev_id,sock;
     int channel = -1;
-    char *filepath = "/home/pi/smsb1.txt";
+    //char *filepath = "/home/pi/smsb1.txt";
     char *filename;
     obexftp_client_t *cli = NULL; /*!!!*/
     int ret;
     pthread_t tid = pthread_self();
     if (Pigs->threadId >= BLOCKOFDONGLE)
     {
-        dev_id = hci_devid("00:1A:7D:DA:71:03");
+        dev_id = hci_devid("00:1A:7D:DA:71:01");
     }
     else
     {
-        dev_id = hci_devid("00:1A:7D:DA:71:01");
+        dev_id = hci_devid("00:1A:7D:DA:71:02");
     }
     sock = hci_open_dev(dev_id);
     if (dev_id < 0 || sock < 0) {
@@ -719,22 +731,49 @@ for(i=0;i<MAX_OF_DEVICE;i++)
 
 
 }
+int lengthOfU(unsigned char * str)
+{
+    int i = 0;
 
+    while(*(str++)){
+        i++;
+        if(i == INT_MAX)
+            return -1;
+    }
+
+    return i;
+}
 /*********************************************************************
  * STARTUP FUNCTION
  */
 int main(int argc, char **argv)
 {
     int i=0;
-    pthread_t Device_cleaner_id,ZigBee_id;
-    ZigBee_Node_dectet();
+    char port[]="3333";
+    char hostname[]="140.109.17.72";
+    pthread_t Device_cleaner_id,ZigBee_id,TCP_Receiver_id;
+
+    //ZigBee_Node_dectet();
+    TCPinit(port,hostname);
+    if(Beacon_Type == GATEWAY)
+        printf("GATEWAY\n");
+    if(Beacon_Type == BEACON)
+        printf("BEACON\n");
+  
+    //*****TCP Receiver
+    pthread_create(&TCP_Receiver_id,NULL,(void *) T_TCP_Receiver,NULL);
     for(i=0;i<ZigBee_addr_Scan_count;i++)
     {
-printf("Node:0x%02X%02X%02X%02X 0x%02X%02X%02X%02X\n",IpTable[i].address.addr64[0],IpTable[i].address.addr64[1],IpTable[i].address.addr64[2],IpTable[i].address.addr64[3],IpTable[i].address.addr64[4],IpTable[i].address.addr64[5],IpTable[i].address.addr64[6],IpTable[i].address.addr64[7] );
-
+    //printf("Node:0x%02X%02X%02X%02X 0x%02X%02X%02X%02X\n",IpTable[i].address.addr64[0],IpTable[i].address.addr64[1],IpTable[i].address.addr64[2],IpTable[i].address.addr64[3],IpTable[i].address.addr64[4],IpTable[i].address.addr64[5],IpTable[i].address.addr64[6],IpTable[i].address.addr64[7] );
+    //printf("aaaa:%d\n",sizeof(IpTable) );
+    //COMM_Parser(S_IPTABLE,ZigBee_addr_Scan_count,NULL);
     }
+    
+    
+    //*****Device Cleaner
     pthread_create(&Device_cleaner_id,NULL,(void *) DeviceCleaner,NULL);
-    pthread_create(&ZigBee_id,NULL,(void *) ZigBeeNetwork,NULL);
+    //*****ZigBee Receiver
+    //pthread_create(&ZigBee_id,NULL,(void *) ZigBee_Receiver,NULL);
     for(i=0;i<MAX_OF_DEVICE;i++)
     UsedDeviceQueue.DeviceUsed[i]= 0;
     while (1) {scanner_start();}
