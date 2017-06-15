@@ -1,148 +1,203 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <sys/poll.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/timeb.h>
-#include <netinet/in.h>
-#include <netdb.h> 
-#include <pthread.h>
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
-#include <signal.h>
-#include <obexftp/client.h> /*!!!*/
-#include <string.h>
-#include <ctype.h>
-#include <semaphore.h>
-#include <errno.h>
-#include <time.h>
-#include <xbee.h>
-#include <limits.h>  
-#include <ctype.h>
-#define MAX_OF_DEVICE 30 //max number of device to storage
-#define NTHREADS 30    //max number of threads used in multithreading
-#define PUSHDONGLES 2
-#define NUMBER_OF_DEVICE_IN_EACH_PUSHDONGLE 9
-#define BLOCKOFDONGLE 5
-#define IDLE         -1
-#define GATEWAY       1
-#define BEACON        0
-//***************Parser define********************
-#define S_IPTABLE 0x30
-#define MAXBUF 64
-#define DELIM "="
+/*
+ * Copyright (c) 2016 Academia Sinica, Institute of Information Science
+ *
+ * License:
+ *      GPL 3.0 : The content of this file is subject to the terms and
+ *      conditions defined in file 'COPYING.txt', which is part of this source
+ *      code package.
+ *
+ * Project Name:
+ *
+ *      BeDIPS
+ *
+ * File Description: This is the header file containing the function declarations
+                     and variables used in the LBeacon.c file. 
+ * File Name:
+ *
+ *      LBeacon.h
+ *
+ * Abstract:
+ *
+ *      BeDIPS uses LBeacons to deliver users' 3D coordinates and textual 
+ *      descriptions of their locations to their devices. Basically, LBeacon is 
+ *      an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and 
+ *      location descriptions of every LBeacon are retrieved from BeDIS
+ *      (Building/environment Data and Information System) and stored locally
+ *      during deployment and maintenance times. Once initialized, each LBeacon
+ *      broadcasts its coordinates and location description to Bluetooth
+ *      enabled devices within its coverage area. 
+ *
+ * Authors:
+ *
+ *      Jake Lee, jakelee@iis.sinica.edu.tw
+ *
+ */
+/*****************************************************************************
+  * INCLUDES
+  */
+
+#include "bluetooth/bluetooth.h"
+#include "bluetooth/hci.h"
+#include "bluetooth/hci_lib.h"
+#include "ctype.h"
+#include "errno.h"
+#include "limits.h"
+#include "netinet/in.h"
+#include "netdb.h"
+#include "obexftp/client.h"
+#include "pthread.h"
+#include "signal.h"
+#include "semaphore.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
+#include "sys/socket.h"
+#include "sys/poll.h"
+#include "sys/ioctl.h"
+#include "sys/types.h"
+#include "sys/time.h"
+#include "sys/timeb.h"
+#include "time.h"
+#include "unistd.h"
+
+/*****************************************************************************
+  * CONTANTS
+  */
+
+//  The name of the config file
 #define CONFIG_FILENAME "config.conf"
-const long long Timeout = 20000; // TimeOut in 20s
-const unsigned char broadcase_zigbee_address[]="000000FF";
-char addr[30][18] = { 0 };
-char addrbufferlist[PUSHDONGLES * NUMBER_OF_DEVICE_IN_EACH_PUSHDONGLE][18] = { 0 };
-char *filepath="/home/pi/a.txt";
-char *filepath1="/home/pi/a.txt";
-char *filepath2="/home/pi/b.txt";
-char *filepath3="/home/pi/106right.png";
-char *filepath4="/home/pi/b.jpg";
-unsigned char my_zigbee_address[]="00000001";
-char port[]="3333";
-char hostname[]="140.109.17.72";
-int IdleHandler[PUSHDONGLES * NUMBER_OF_DEVICE_IN_EACH_PUSHDONGLE] = {0};
-int Beacon_Type = -1;
-pthread_t thread_id[NTHREADS] = {0};
-void *send_file(void *address); //prototype for the file sending function used in the new thread
-void *DeviceCleaner(void); //prototype for clean the device by time
-//searching for devices code is taken from some bluez examples
-//struct xbee_pkt **Global_pkt;
-int xbee_pkt_count = 0;
-sem_t ndComplete;
-//TCP/IP parameters
-int sockfd, portno;
-/* IP table: |Location|GatewayIpv4|Beacon address|Tx Power| */
-int RSSI_RANGE = -60;
-struct xbee *xbee;
-void *d;
-struct xbee_con *con;
-struct xbee_conAddress address;
-struct xbee_conSettings settings;
-struct config configstruct;
-/*-----------------------Package-----------------------*/
-// |1byte|5bytes|2bytes|2byte|64bytes|
-struct Packet
-{
-	unsigned char CMD;  //   --1 byte
-	float coordinate_X; //   --------
-	float coordinate_Y; //           |--5 bytes
-	char level;         //   --------
-	int packet_no;      //   --2 bytes
-	int data_len;       //   --2 byte
-	unsigned char data[64];//--64 bytes
-};
-struct config
-{
-   unsigned char my_zigbee_address[MAXBUF];
-   char port[MAXBUF];
-   char hostname[MAXBUF];
-   char filepath_head[MAXBUF];
-   char filename[MAXBUF];
-   char coordinate_X[MAXBUF];
-   char coordinate_Y[MAXBUF];
-   char level[MAXBUF];
-   int my_zigbee_address_len;
-   int port_len;
-   int hostname_len;
-   int filepath_head_len;
-   int filename_len;
-   int coordinate_X_len;
-   int coordinate_Y_len;
-   int level_len;
-};
-/*********************************************************************
- * TYPEDEFS
+
+//  Read the parameter after "=" from config file
+#define DELIMITER "="
+
+// Length of Bluetooth MAC addr
+#define LEN_OF_MAC_ADDRESS 18
+
+//  Maximum character of each line of config file
+#define MAX_BUFFER 64
+
+//  Maximum value of devices possible with all PUSH dongles
+#define MAX_DEVICES 18
+
+//  Maximum value of devices that a PUSH dongle can handle
+#define MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
+
+//  Maximum value of the Bluetooth Object PUSH threads at the same time
+#define MAX_THREADS 18
+
+//  The number of user devices each PUSH dongle is responsible for
+#define NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE 5
+
+//  Number of the Bluetooth dongles which is for PUSH function
+#define NUM_OF_PUSH_DONGLES 2
+
+//  Device ID of the PUSH dongle
+#define PUSH_DONGLE_A 2
+
+//  Device ID of the secondary PUSH dongle
+#define PUSH_DONGLE_B 3
+
+//  Device ID of the SCAN dongle
+#define SCAN_DONGLE 1
+
+//  Transmission range limiter
+#define RSSI_RANGE -60
+
+//  The interval time of same user object push
+#define TIMEOUT 20000
+
+// Used for handling pushed users and bluetooth device addr
+// Column depends on MAX_DEVICES; row depends on LEN_OF_MAC_ADDRESS
+char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
+
+//  Stores value to see whether thread is idle or not
+int g_idle_handler[MAX_DEVICES] = {0};
+
+//  Path of object push file
+char *g_filepath;
+
+/*****************************************************************************
+ * UNION
  */
 
-typedef struct {
-    char addr[18];
-    int threadId;
-    pthread_t t;
+//  Transform float to Hex code
+union {
+    float f;
+    unsigned char b[sizeof(float)];
+} coordinate_X;
 
+union {
+    float f;
+    unsigned char b[sizeof(float)];
+} coordinate_Y;
 
-} Threadaddr;
+/*****************************************************************************
+ * TYPEDEF STUCTS
+ */
 
-typedef struct {
-    long long DeviceAppearTime[MAX_OF_DEVICE];
-    char DeviceAppearAddr[MAX_OF_DEVICE][18];
-    char DeviceUsed[MAX_OF_DEVICE];
-
-} DeviceQueue;
-typedef struct 
+typedef struct Config
 {
-    unsigned char COMM;
-    unsigned char data[64];
-    int Packagelen;
-    int Datalen;
-    int count;
-    /* data */
-} DataPackage;
-DeviceQueue UsedDeviceQueue;
+    char coordinate_X[MAX_BUFFER];
+    char coordinate_Y[MAX_BUFFER];
+    char filename[MAX_BUFFER];
+    char filepath[MAX_BUFFER];
+    char level[MAX_BUFFER];
+    char rssi_coverage[MAX_BUFFER];
+    int coordinate_X_len;
+    int coordinate_Y_len;
+    int filename_len;
+    int filepath_len;
+    int level_len;
+    int rssi_coverage_len;
+} Config;
 
-int ZigBee_addr_Scan_count=0;
-struct xbee_conAddress Gatewayaddr;
-void Parse_package(struct Packet packet);
-void error(char *msg);
-void TCPinit(char port[],char hostname[]);
-void myCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **data);
-void *T_TCP_Receiver(void);
-void nodeCB(struct xbee *xbee, struct xbee_con *con, struct xbee_pkt **pkt, void **data);
-int ZigBee_Node_dectet();
-long long getSystemTime();
-int UsedAddrCheck(char addr[]);
-int compare_strings(char a[], char b[]);
-void ifTequal(pthread_t tid);
-static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi);
-static void sendToPushDongle(bdaddr_t *bdaddr, char has_rssi, int rssi);
-static void scanner_start();
+// Store config information from the passed in file
+Config g_config;
+
+typedef struct DeviceQueue
+{
+    long long appear_time[MAX_DEVICES];
+    char appear_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS];
+    char used[MAX_DEVICES];
+} DeviceQueue;
+
+// Stores information for each device
+DeviceQueue g_device_queue;
+
+typedef struct ThreadAddr
+{
+    pthread_t thread;
+    int thread_id;
+    char addr[LEN_OF_MAC_ADDRESS];
+} ThreadAddr;
+
+// Stores information for each thread
+ThreadAddr g_thread_addr[MAX_DEVICES];
+
+/*****************************************************************************
+ * FUNCTIONS
+ */
+
+//  Get the system time
+long long get_system_time();
+
+//  Check if the user can be pushed again
+int check_addr_status(char addr[]);
+
+//  Thread of PUSH dongle to send file for users
 void *send_file(void *ptr);
-void *DeviceCleaner(void);
-int lengthOfU(unsigned char * str);
+
+//  Send scanned user addr to push dongle
+static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi);
+
+//  Print the result of RSSI value for each case
+static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi);
+
+//  Start scanning bluetooth device
+static void start_scanning();
+
+//  Remove the user ID from pushed list
+void *timeout_cleaner(void);
+
+//  Read parameter from config file
+Config get_config(char *filename);
