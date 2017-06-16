@@ -14,6 +14,7 @@
  *                   Bluetooth address. Depending on the RSSI value, it will
  *                   determine if it should location related files to the user.
  *                   The detection is based on BLE or OBEX.
+ *
  * File Name:
  *
  *      LBeacon.c
