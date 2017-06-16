@@ -42,14 +42,14 @@
 // -lbfb -lbluetooth -lobexftp -lopenobex
 
 /*
- * @fn      get_system_time
+ * @fn             get_system_time
  *
- * @brief   Helper function for check_addr_status to give each addr the start of
- *          the push time.
+ * @brief          Helper function for check_addr_status to give each addr the
+ *                 start of the push time.
  *
- * @thread_addr   none
+ * @thread_addr    none
  *
- * @return  System time
+ * @return         System time
  */
 long long get_system_time() {
     struct timeb t;
@@ -58,16 +58,17 @@ long long get_system_time() {
 }
 
 /*
- * @fn      check_addr_status
+ * @fn             check_addr_status
  *
- * @brief   Helper function for start_scanning used to check if the addr is
- *          pushing or not. If addr is not in the push list it will put the addr
- *          in the push list and wait for timeout to be removed from list.
+ * @brief          Helper function for start_scanning used to check if the addr
+ *                 is pushing or not. If addr is not in the push list it will
+ *                 put the addr in the push list and wait for timeout to be
+ *                 removed from the list.
  *
- * @thread_addr   addr - addr scanned by Scan function
+ * @thread_addr    addr - addr scanned by Scan function
  *
- * @return  0: addr in pushing list
- *          1: Unused addr
+ * @return         0: addr in pushing list
+ *                 1: Unused addr
  */
 int check_addr_status(char addr[]) {
     int if_used = 0;
@@ -93,13 +94,13 @@ int check_addr_status(char addr[]) {
 }
 
 /*
- * @fn      send_file
+ * @fn             send_file
  *
- * @brief   Sends the push message to the device.
+ * @brief          Sends the push message to the device.
  *
- * @thread_addr   ptr - scanned bluetooth addr
+ * @thread_addr    ptr - scanned bluetooth addr
  *
- * @return  none
+ * @return         none
  */
 void *send_file(void *ptr) {
     ThreadAddr *thread_addr = (ThreadAddr *)ptr;
@@ -193,15 +194,15 @@ void *send_file(void *ptr) {
 }
 
 /*
- * @fn      send_to_push_dongle
+ * @fn             send_to_push_dongle
  *
- * @brief   Sends the MAC addr of device to send_file function.
+ * @brief          Sends the MAC addr of device to send_file function.
  *
- * @thread_addr   bdaddr - Bluetooth addr
- *                has_rssi - has RSSI value or not
- *                rssi - RSSI value
+ * @thread_addr    bdaddr - Bluetooth addr
+ *                 has_rssi - has RSSI value or not
+ *                 rssi - RSSI value
  *
- * @return  none
+ * @return         none
  */
 static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
     int idle = -1;
@@ -235,15 +236,16 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
 }
 
 /*
- * @fn      print_result
+ * @fn             print_result
  *
- * @brief   Print the RSSI value of the user's addr scanned by the scan function
+ * @brief          Print the RSSI value of the user's addr scanned by the scan
+ * function
  *
- * @thread_addr   bdaddr - Bluetooth addr
- *                has_rssi - has RSSI value or not
- *                rssi - RSSI value
+ * @thread_addr    bdaddr - Bluetooth addr
+ *                 has_rssi - has RSSI value or not
+ *                 rssi - RSSI value
  *
- * @return  none
+ * @return         none
  */
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
     char addr[LEN_OF_MAC_ADDRESS];
@@ -259,13 +261,13 @@ static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
 }
 
 /*
- * @fn      start_scanning
+ * @fn             start_scanning
  *
- * @brief   asynchronous scanning bluetooth device
+ * @brief          asynchronous scanning bluetooth device
  *
- * @thread_addr   none
+ * @thread_addr    none
  *
- * @return  none
+ * @return         none
  */
 static void start_scanning() {
     struct hci_filter flt;
@@ -379,15 +381,17 @@ static void start_scanning() {
 }
 
 /*
- * @fn      timeout_cleaner
+ * @fn              timeout_cleaner
  *
- * @brief   Working asynchronous thread of TIMEOUT cleaner. When Bluetooth was
- *          pushed by push function it addr will store in used list then wait
- *          for timeout to be remove from list.
+ * @brief           Working asynchronous thread of TIMEOUT cleaner. When
+ * Bluetooth was
+ *                  pushed by push function it addr will store in used list then
+ * wait
+ *                  for timeout to be remove from list.
  *
- * @thread_addr   none
+ * @thread_addr    none
  *
- * @return  none
+ * @return          none
  */
 void *timeout_cleaner(void) {
     int i;
@@ -409,13 +413,13 @@ void *timeout_cleaner(void) {
 }
 
 /*
- * @fn      get_config
+ * @fn             get_config
  *
- * @brief   Read the config file and initialize parameters.
+ * @brief          Read the config file and initialize parameters.
  *
- * @thread_addr   filename - ame of config file
+ * @thread_addr    filename - ame of config file
  *
- * @return  Config struct including filepath, coordinates, etc.
+ * @return         Config struct including filepath, coordinates, etc.
  */
 Config get_config(char *filename) {
     Config config;
@@ -471,7 +475,7 @@ Config get_config(char *filename) {
 /* Startup function */
 int main(int argc, char **argv) {
     char cmd[100];
-    char ble_buffer[100]; /* HCI command for BLE beacon*/
+    char ble_buffer[100]; /* HCI command for BLE beacon */
     char hex_c[20];
     pthread_t Device_cleaner_id;
     int i;

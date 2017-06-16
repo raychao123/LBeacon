@@ -33,9 +33,10 @@
  *      Jake Lee, jakelee@iis.sinica.edu.tw
  *
  */
-/*****************************************************************************
-  * INCLUDES
-  */
+
+/*
+* INCLUDES
+*/
 
 #include "bluetooth/bluetooth.h"
 #include "bluetooth/hci.h"
@@ -61,64 +62,66 @@
 #include "time.h"
 #include "unistd.h"
 
-/*****************************************************************************
-  * CONTANTS
-  */
+/*
+ * CONSTANTS
+ */
 
-//  The name of the config file
+// The name of the config file
 #define CONFIG_FILENAME "config.conf"
 
-//  Read the parameter after "=" from config file
+// Read the parameter after "=" from config file
 #define DELIMITER "="
 
 // Length of Bluetooth MAC addr
 #define LEN_OF_MAC_ADDRESS 18
 
-#define MAX_BUFFER 64   //  Maximum character of each line of config file
-#define MAX_DEVICES 18  //  Maximum devices possible with all PUSH dongles
+// Maximum character of each line of config file
+#define MAX_BUFFER 64
 
-//  Maximum value of devices that a PUSH dongle can handle
+// Maximum devices possible with all PUSH dongles
+#define MAX_DEVICES 18
+
+// Maximum value of devices that a PUSH dongle can handle
 #define MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
 
-//  Maximum value of the Bluetooth Object PUSH threads at the same time
+// Maximum value of the Bluetooth Object PUSH threads at the same time
 #define MAX_THREADS 18
 
-//  The number of user devices each PUSH dongle is responsible for
+// The number of user devices each PUSH dongle is responsible for
 #define NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE 5
 
-//  Number of the Bluetooth dongles which is for PUSH function
+// Number of the Bluetooth dongles which is for PUSH function
 #define NUM_OF_PUSH_DONGLES 2
 
-//  Device ID of the PUSH dongle
+// Device ID of the PUSH dongle
 #define PUSH_DONGLE_A 2
 
-//  Device ID of the secondary PUSH dongle
+// Device ID of the secondary PUSH dongle
 #define PUSH_DONGLE_B 3
 
-//  Device ID of the SCAN dongle
+// Device ID of the SCAN dongle
 #define SCAN_DONGLE 1
 
-//  Transmission range limiter
+// Transmission range limiter
 #define RSSI_RANGE -60
 
-//  The interval time of same user object push
+// The interval time of same user object push
 #define TIMEOUT 20000
 
 // Used for handling pushed users and bluetooth device addr
-// Column depends on MAX_DEVICES; row depends on LEN_OF_MAC_ADDRESS
 char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
-//  Stores value to see whether thread is idle or not
+// Stores value to see whether thread is idle or not
 int g_idle_handler[MAX_DEVICES] = {0};
 
-//  Path of object push file
+// Path of object push file
 char *g_filepath;
 
-/*****************************************************************************
+/*
  * UNION
  */
 
-//  Transform float to Hex code
+// Transform float to Hex code
 union {
     float f;
     unsigned char b[sizeof(float)];
@@ -129,8 +132,8 @@ union {
     unsigned char b[sizeof(float)];
 } coordinate_Y;
 
-/*****************************************************************************
- * TYPEDEF STUCTS
+/*
+ * TYPEDEF STRUCTS
  */
 
 typedef struct Config {
@@ -169,30 +172,30 @@ typedef struct ThreadAddr {
 // Stores information for each thread
 ThreadAddr g_thread_addr[MAX_DEVICES];
 
-/*****************************************************************************
+/*
  * FUNCTIONS
  */
 
-//  Get the system time
+// Get the system time
 long long get_system_time();
 
-//  Check if the user can be pushed again
+// Check if the user can be pushed again
 int check_addr_status(char addr[]);
 
-//  Thread of PUSH dongle to send file for users
+// Thread of PUSH dongle to send file for users
 void *send_file(void *ptr);
 
-//  Send scanned user addr to push dongle
+// Send scanned user addr to push dongle
 static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi);
 
-//  Print the result of RSSI value for each case
+// Print the result of RSSI value for each case
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi);
 
-//  Start scanning bluetooth device
+// Start scanning bluetooth device
 static void start_scanning();
 
-//  Remove the user ID from pushed list
+// Remove the user ID from pushed list
 void *timeout_cleaner(void);
 
-//  Read parameter from config file
+// Read parameter from config file
 Config get_config(char *filename);
