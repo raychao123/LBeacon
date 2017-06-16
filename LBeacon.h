@@ -11,8 +11,8 @@
  *      BeDIPS
  *
  * File Description: This is the header file containing the function
- declarations
-                     and variables used in the LBeacon.c file.
+ *                    declarations and variables used in the LBeacon.c file.
+ *
  * File Name:
  *
  *      LBeacon.h
