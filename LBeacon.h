@@ -10,22 +10,23 @@
  *
  *      BeDIPS
  *
- * File Description: This is the header file containing the function declarations
-                     and variables used in the LBeacon.c file. 
+ * File Description: This is the header file containing the function
+ declarations
+                     and variables used in the LBeacon.c file.
  * File Name:
  *
  *      LBeacon.h
  *
  * Abstract:
  *
- *      BeDIPS uses LBeacons to deliver users' 3D coordinates and textual 
- *      descriptions of their locations to their devices. Basically, LBeacon is 
- *      an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and 
+ *      BeDIPS uses LBeacons to deliver users' 3D coordinates and textual
+ *      descriptions of their locations to their devices. Basically, LBeacon is
+ *      an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
  *      location descriptions of every LBeacon are retrieved from BeDIS
  *      (Building/environment Data and Information System) and stored locally
  *      during deployment and maintenance times. Once initialized, each LBeacon
  *      broadcasts its coordinates and location description to Bluetooth
- *      enabled devices within its coverage area. 
+ *      enabled devices within its coverage area.
  *
  * Authors:
  *
@@ -42,21 +43,21 @@
 #include "ctype.h"
 #include "errno.h"
 #include "limits.h"
-#include "netinet/in.h"
 #include "netdb.h"
+#include "netinet/in.h"
 #include "obexftp/client.h"
 #include "pthread.h"
-#include "signal.h"
 #include "semaphore.h"
+#include "signal.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
-#include "sys/socket.h"
-#include "sys/poll.h"
 #include "sys/ioctl.h"
-#include "sys/types.h"
+#include "sys/poll.h"
+#include "sys/socket.h"
 #include "sys/time.h"
 #include "sys/timeb.h"
+#include "sys/types.h"
 #include "time.h"
 #include "unistd.h"
 
@@ -73,9 +74,8 @@
 // Length of Bluetooth MAC addr
 #define LEN_OF_MAC_ADDRESS 18
 
-
 #define MAX_BUFFER 64   //  Maximum character of each line of config file
-#define MAX_DEVICES 18  //  Maximum value of devices possible with all PUSH dongles
+#define MAX_DEVICES 18  //  Maximum devices possible with all PUSH dongles
 
 //  Maximum value of devices that a PUSH dongle can handle
 #define MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
@@ -120,53 +120,50 @@ char *g_filepath;
 
 //  Transform float to Hex code
 union {
-  float f;
-  unsigned char b[sizeof(float)];
+    float f;
+    unsigned char b[sizeof(float)];
 } coordinate_X;
 
 union {
-  float f;
-  unsigned char b[sizeof(float)];
+    float f;
+    unsigned char b[sizeof(float)];
 } coordinate_Y;
 
 /*****************************************************************************
  * TYPEDEF STUCTS
  */
 
-typedef struct Config
-{
-  char  coordinate_X[MAX_BUFFER];
-  char  coordinate_Y[MAX_BUFFER];
-  char  filename[MAX_BUFFER];
-  char  filepath[MAX_BUFFER];
-  char  level[MAX_BUFFER];
-  char  rssi_coverage[MAX_BUFFER];
-  int   coordinate_X_len;
-  int   coordinate_Y_len;
-  int   filename_len;
-  int   filepath_len;
-  int   level_len;
-  int   rssi_coverage_len;
+typedef struct Config {
+    char coordinate_X[MAX_BUFFER];
+    char coordinate_Y[MAX_BUFFER];
+    char filename[MAX_BUFFER];
+    char filepath[MAX_BUFFER];
+    char level[MAX_BUFFER];
+    char rssi_coverage[MAX_BUFFER];
+    int coordinate_X_len;
+    int coordinate_Y_len;
+    int filename_len;
+    int filepath_len;
+    int level_len;
+    int rssi_coverage_len;
 } Config;
 
 // Store config information from the passed in file
 Config g_config;
 
-typedef struct DeviceQueue
-{
-  long long   appear_time[MAX_DEVICES];
-  char        appear_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS];
-  char        used[MAX_DEVICES];
+typedef struct DeviceQueue {
+    long long appear_time[MAX_DEVICES];
+    char appear_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS];
+    char used[MAX_DEVICES];
 } DeviceQueue;
 
 // Stores information for each device
 DeviceQueue g_device_queue;
 
-typedef struct ThreadAddr
-{
-  pthread_t thread;
-  int thread_id;
-  char addr[LEN_OF_MAC_ADDRESS];
+typedef struct ThreadAddr {
+    pthread_t thread;
+    int thread_id;
+    char addr[LEN_OF_MAC_ADDRESS];
 } ThreadAddr;
 
 // Stores information for each thread
