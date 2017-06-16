@@ -36,9 +36,9 @@
 
 #include "LBeacon.h"
 
-/* gcc LBeacon.c -g -o LBeacon -L/usr/local/lib -lrt -lpthread -lmulticobex -lbfb -lbluetooth -lobexftp -lopenobex */
+// gcc LBeacon.c -g -o LBeacon -L/usr/local/lib -lrt -lpthread -lmulticobex -lbfb -lbluetooth -lobexftp -lopenobex
 
-/*****************************************************************************
+/*
  * @fn      get_system_time
  *
  * @brief   helper function for check_addr_status to give each addr the start of 
@@ -55,7 +55,7 @@ long long get_system_time()
     return 1000 * t.time + t.millitm;
 }
 
-/*****************************************************************************
+/*
  * @fn      check_addr_status
  *
  * @brief   helper function for start_scanning used to check if the addr is pushing
@@ -96,7 +96,7 @@ int check_addr_status(char addr[])
     return if_used;
 }
 
-/*****************************************************************************
+/*
  * @fn      send_file
  *
  * @brief   sends the push message to the device
@@ -114,9 +114,9 @@ void *send_file(void *ptr)
     int socket;
     int channel = -1;
     int i;
-    obexftp_client_t *cli = NULL;
     int ret;
     pthread_t tid = pthread_self();
+    obexftp_client_t *cli = NULL;
     if (thread_addr->thread_id >= NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE)
     {
         dev_id = PUSH_DONGLE_B;
@@ -132,7 +132,6 @@ void *send_file(void *ptr)
         pthread_exit(NULL);
     }
     printf("Thread number %d\n", thread_addr->thread_id);
-    // pthread_exit(0);
     long long start = get_system_time();
     addr = (char *)thread_addr->addr;
     channel = obexftp_browse_bt_push(addr);
@@ -211,7 +210,7 @@ void *send_file(void *ptr)
     pthread_exit(0);
 }
 
-/*****************************************************************************
+/*
  * @fn      send_to_push_dongle
  *
  * @brief   sends the MAC addr of device to send_file function
@@ -259,7 +258,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi)
     }
 }
 
-/*****************************************************************************
+/*
  * @fn      print_result
  *
  * @brief   print the RSSI value of the user's addr scanned by the
@@ -288,7 +287,7 @@ static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi)
     fflush(NULL);
 }
 
-/*****************************************************************************
+/*
  * @fn      start_scanning
  *
  * @brief   asynchronous scanning bluetooth device
@@ -317,7 +316,7 @@ static void start_scanning()
     dev_id = SCAN_DONGLE;
     printf("%d", dev_id);
 
-    // Open Bluetooth device
+    /* Open Bluetooth device */
     socket = hci_open_dev(dev_id);
     if (0 > dev_id || 0 > socket)
     {
@@ -325,7 +324,7 @@ static void start_scanning()
         return;
     }
 
-    // Setup filter
+    /* Setup filter */
     hci_filter_clear(&flt);
     hci_filter_set_ptype(HCI_EVENT_PKT, &flt);
     hci_filter_set_event(EVT_INQUIRY_RESULT, &flt);
@@ -366,7 +365,7 @@ static void start_scanning()
     {
         p.revents = 0;
 
-        // Poll the Bluetooth device for an event
+        /* Poll the Bluetooth device for an event */
         if (0 < poll(&p, 1, -1))
         {
             len = read(socket, buf, sizeof(buf));
@@ -426,7 +425,7 @@ static void start_scanning()
     close(socket);
 }
 
-/*****************************************************************************
+/*
  * @fn      timeout_cleaner
  *
  * @brief   thread of TIMEOUT cleaner. When Bluetooth was pushed by push
@@ -460,7 +459,7 @@ void *timeout_cleaner(void)
     }
 }
 
-/*****************************************************************************
+/*
  * @fn      get_config
  *
  * @brief   read the config file and initialize parameter
@@ -489,65 +488,65 @@ Config get_config(char *filename)
             {
                 memcpy(config.filepath, config_message, strlen(config_message));
                 config.filepath_len = strlen(config_message);
-                // printf("%s",config.imgserver);
+                /* printf("%s",config.imgserver); */
             }
             else if (1 == i)
             {
                 memcpy(config.filename, config_message, strlen(config_message));
                 config.filename_len = strlen(config_message);
-                // printf("%s",config.ccserver);
+                /* printf("%s",config.ccserver); */
             }
             else if (2 == i)
             {
                 memcpy(config.coordinate_X, config_message, strlen(config_message));
                 config.coordinate_X_len = strlen(config_message);
-                // printf("%s",config.port);
+                /* printf("%s",config.port); */
             }
             else if (3 == i)
             {
                 memcpy(config.coordinate_Y, config_message, strlen(config_message));
                 config.coordinate_Y_len = strlen(config_message);
-                // printf("%s",config.imagename);
+                /* printf("%s",config.imagename); */
             }
             else if (4 == i)
             {
                 memcpy(config.level, config_message, strlen(config_message));
                 config.level_len = strlen(config_message);
-                // printf("%s",config.getcmd);
+                /* printf("%s",config.getcmd); */
             }
             else if (5 == i)
             {
                 memcpy(config.rssi_coverage, config_message, strlen(config_message));
                 config.rssi_coverage_len = strlen(config_message);
-                // printf("%s",config.coordinate_X);
+                /* printf("%s",config.coordinate_X); */
             }
             i++;
-        } // End while
+            /* End while */
+        }
         fclose(file);
-    } // End if file
+        /* End if file */
+    }
 
     return config;
 }
 
-/*****************************************************************************
- * STARTUP FUNCTION
- */
+/* Startup function */
 int main(int argc, char **argv)
 {
     char cmd[100];
-    char ble_buffer[100]; // HCI command for BLE beacon
+    char ble_buffer[100]; /* HCI command for BLE beacon*/
     char hex_c[20];
     pthread_t Device_cleaner_id;
     int i;
 
     //*-----Initialize BLE--------
-    sprintf(cmd, "hciconfig hci0 leadv 3");
-    system(cmd);
-    sprintf(cmd, "hciconfig hci0 noscan");
-    system(cmd);
-    sprintf(ble_buffer,
-            "hcitool -i hci0 cmd 0x08 0x0008 1E 02 01 1A 1A FF 4C 00 02 15 E2 C5 "
-            "6D B5 DF FB 48 D2 B0 60 D0 F5 11 11 11 11 00 00 00 00 C8 00");
+    // sprintf(cmd, "hciconfig hci0 leadv 3");
+    // system(cmd);
+    // sprintf(cmd, "hciconfig hci0 noscan");
+    // system(cmd);
+    // sprintf(ble_buffer,
+    //         "hcitool -i hci0 cmd 0x08 0x0008 1E 02 01 1A 1A FF 4C 00 02 15 E2 C5 "
+    //         "6D B5 DF FB 48 D2 B0 60 D0 F5 11 11 11 11 00 00 00 00 C8 00");
     //*-----Initialize BLE--------
 
     //*-----Load config--------start
@@ -556,16 +555,16 @@ int main(int argc, char **argv)
     memcpy(g_filepath, g_config.filepath, g_config.filepath_len - 1);
     memcpy(g_filepath + g_config.filepath_len - 1, g_config.filename,
            g_config.filename_len - 1);
-    coordinate_X.f = (float)atof(g_config.coordinate_X);
-    coordinate_Y.f = (float)atof(g_config.coordinate_Y);
-    printf("%s\n", hex_c);
-    memcpy(ble_buffer + 98, hex_c, 11);
-    printf("%s\n", hex_c);
-    memcpy(ble_buffer + 110, hex_c, 11);
-    system(ble_buffer);
+    // coordinate_X.f = (float)atof(g_config.coordinate_X);
+    // coordinate_Y.f = (float)atof(g_config.coordinate_Y);
+    // printf("%s\n", hex_c);
+    // memcpy(ble_buffer + 98, hex_c, 11);
+    // printf("%s\n", hex_c);
+    // memcpy(ble_buffer + 110, hex_c, 11);
+    // system(ble_buffer);
     //*-----Load config--------end
 
-    //  Device Cleaner
+    /* Device Cleaner */
     pthread_create(&Device_cleaner_id, NULL, (void *)timeout_cleaner, NULL);
 
     for (i = 0; i < MAX_DEVICES; i++)

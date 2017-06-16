@@ -73,11 +73,8 @@
 // Length of Bluetooth MAC addr
 #define LEN_OF_MAC_ADDRESS 18
 
-//  Maximum character of each line of config file
-#define MAX_BUFFER 64
-
-//  Maximum value of devices possible with all PUSH dongles
-#define MAX_DEVICES 18
+#define MAX_BUFFER 64  //  Maximum character of each line of config file
+#define MAX_DEVICES 18 //  Maximum value of devices possible with all PUSH dongles
 
 //  Maximum value of devices that a PUSH dongle can handle
 #define MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
