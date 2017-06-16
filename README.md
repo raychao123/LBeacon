@@ -4,7 +4,7 @@ LBeacon (Location Beacon): BeDIPS uses LBeacons to deliver to users the 3D coord
 
 Alpha version of LBeacon was demonstrated during Academia Sinica open house and will be experimented with and assessed by collaborators of the project.
 
-### Installation
+### Installing Raspberry Pi
 
 [Download](https://www.raspberrypi.org/downloads/raspbian/) the Raspberry Pi operating system and follow its installation guide.
 
@@ -37,7 +37,8 @@ Update the links/cache the dynamic loader uses:
 ```sh
 $ sudo ldconfig -v
 ```
-To compile and run the LBeacon:
+
+### Compiling and Running LBeacon
 ```sh
 $ gcc LBeacon.c -g -o LBeacon -L/usr/local/lib -lrt -lpthread -lmulticobex -lbfb -lbluetooth -lobexftp -lopenobex
 $ sudo ./LBeacon

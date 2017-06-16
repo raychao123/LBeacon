@@ -38,9 +38,6 @@
 
 #include "LBeacon.h"
 
-// gcc LBeacon.c -g -o LBeacon -L/usr/local/lib -lrt -lpthread -lmulticobex
-// -lbfb -lbluetooth -lobexftp -lopenobex
-
 /*
  * @fn             get_system_time
  *
