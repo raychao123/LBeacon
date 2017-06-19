@@ -21,7 +21,7 @@ $ git clone https://gitlab.com/openobex/mainline openobex
 ```
 To compile and install openftp and openobex libraries:
 ```sh
-$ cd openftp
+$ cd obexftp
 $ mkdir build
 $ cd build
 $ cmake ..
