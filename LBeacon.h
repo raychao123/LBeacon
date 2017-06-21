@@ -108,6 +108,17 @@
 // The interval time of same user object push
 #define TIMEOUT 20000
 
+//-----------------------------BLE-----------------------------------------
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
+
+#define EIR_FLAGS                   0X01
+#define EIR_NAME_SHORT              0x08
+#define EIR_NAME_COMPLETE           0x09
+#define EIR_MANUFACTURE_SPECIFIC    0xFF
+
+int global_done = 0;
+//-----------------------------BLE-----------------------------------------
+
 // Used for handling pushed users and bluetooth device addr
 char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
@@ -125,6 +136,7 @@ char *g_filepath;
 union {
     float f;
     unsigned char b[sizeof(float)];
+    int d[2];
 } coordinate_X;
 
 union {
