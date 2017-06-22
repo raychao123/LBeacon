@@ -117,6 +117,9 @@ int g_idle_handler[MAX_DEVICES] = {0};
 // Path of object push file
 char *g_filepath;
 
+// Saving the MAC address so it can be stored into database
+char g_saved_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
+
 /*
  * UNION
  */

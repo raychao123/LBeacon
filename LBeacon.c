@@ -478,14 +478,15 @@ int main(int argc, char **argv) {
     int i;
 
     //*-----Initialize BLE--------
-    sprintf(cmd, "hciconfig hci0 leadv 3");
-    system(cmd);
-    sprintf(cmd, "hciconfig hci0 noscan");
-    system(cmd);
-    sprintf(
-        ble_buffer,
-        "hcitool -i hci0 cmd 0x08 0x0008 1E 02 01 1A 1A FF 4C 00 02 15 E2 C5 "
-        "6D B5 DF FB 48 D2 B0 60 D0 F5 11 11 11 11 00 00 00 00 C8 00");
+    // sprintf(cmd, "hciconfig hci0 leadv 3");
+    // system(cmd);
+    // sprintf(cmd, "hciconfig hci0 noscan");
+    // system(cmd);
+    // sprintf(
+    //     ble_buffer,
+    //     "hcitool -i hci0 cmd 0x08 0x0008 1E 02 01 1A 1A FF 4C 00 02 15 E2 C5
+    //     "
+    //     "6D B5 DF FB 48 D2 B0 60 D0 F5 11 11 11 11 00 00 00 00 C8 00");
     //*-----Initialize BLE--------
 
     //*-----Load config--------start
@@ -494,13 +495,13 @@ int main(int argc, char **argv) {
     memcpy(g_filepath, g_config.filepath, g_config.filepath_len - 1);
     memcpy(g_filepath + g_config.filepath_len - 1, g_config.filename,
            g_config.filename_len - 1);
-    coordinate_X.f = (float)atof(g_config.coordinate_X);
-    coordinate_Y.f = (float)atof(g_config.coordinate_Y);
-    printf("%s\n", hex_c);
-    memcpy(ble_buffer + 98, hex_c, 11);
-    printf("%s\n", hex_c);
-    memcpy(ble_buffer + 110, hex_c, 11);
-    system(ble_buffer);
+    // coordinate_X.f = (float)atof(g_config.coordinate_X);
+    // coordinate_Y.f = (float)atof(g_config.coordinate_Y);
+    // printf("%s\n", hex_c);
+    // memcpy(ble_buffer + 98, hex_c, 11);
+    // printf("%s\n", hex_c);
+    // memcpy(ble_buffer + 110, hex_c, 11);
+    // system(ble_buffer);
     //*-----Load config--------end
 
     /* Device Cleaner */
