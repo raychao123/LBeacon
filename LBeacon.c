@@ -468,7 +468,8 @@ Config get_config(char *filename) {
 
     return config;
 }
-// Start-----------------------------BLE---------------------------------------
+
+/* Start BLE */
 unsigned int *uuid_str_to_data(char *uuid) {
     char conv[] = "0123456789ABCDEF";
     int len = strlen(uuid);
@@ -646,6 +647,7 @@ int disable_advertising() {
 }
 
 void ctrlc_handler(int s) { global_done = 1; }
+
 void *BLE_Beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
     if (rc == 0) {
@@ -676,7 +678,7 @@ int main(int argc, char **argv) {
     pthread_t Device_cleaner_id, BLE_beacon_id;
     int i;
 
-    //*-----Load config--------start
+    /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
     g_filepath = malloc(g_config.filepath_len + g_config.filename_len);
     memcpy(g_filepath, g_config.filepath, g_config.filepath_len - 1);
@@ -690,7 +692,6 @@ int main(int argc, char **argv) {
             coordinate_X.b[0], coordinate_X.b[1], coordinate_X.b[2],
             coordinate_X.b[3], coordinate_Y.b[0], coordinate_Y.b[1],
             coordinate_Y.b[2], coordinate_Y.b[3]);
-    //*-----Load config--------end
 
     /* Device Cleaner */
     pthread_create(&Device_cleaner_id, NULL, (void *)timeout_cleaner, NULL);
