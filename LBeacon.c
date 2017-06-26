@@ -258,6 +258,90 @@ static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
 }
 
 /*
+ * @fn              track_obex_devices
+ *
+ * @brief           track the scanned MAC addresses of OBEX devices under the
+ *                  LBeacon at a time
+ *
+ * @thread_addr     num_of_devices - number of scanned devices at a given time
+ *
+ * @return          none
+ */
+static void track_obex_devices(int num_of_devices) {
+    /* Get current timestamp when tracking OBEX Bluetooth devices. If file is
+     * empty, create new file with LBeacon ID. */
+    long long timestamp = get_system_time();
+    char temp[64]; /* converting long long to char[] */
+    sprintf(temp, "%lld", timestamp);
+    if (0 == g_size_of_obex_file) {
+        /* Overwrites the file and clears the content */
+        FILE *fd = fopen("output-obex.txt", "w+");
+        if (fd == NULL) {
+            perror("Error opening file.");
+        }
+        fputs("LBeacon ID: ########\n", fd);
+        fclose(fd);
+        g_size_of_obex_file++; /* increment line */
+        g_initial_timestamp_of_obex_file = timestamp;
+    }
+
+    /* Format timestamp and MAC addresses into a char[]; ":" to separate
+     * timestamp with MAC address and "," to separate different MAC addresses
+     */
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    int size = 8 + 1 + num_of_devices * 17 + (num_of_devices - 1) + 1;
+    char new_entry[size + 1];
+    for (i = 0; i < 8; i++) {
+        new_entry[k] = temp[i];
+        k++;
+    }
+    new_entry[k] = '-';
+    k++;
+    for (i = 0; i < num_of_devices; i++) {
+        for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
+            new_entry[k] = g_addr[i][j];
+            k++;
+        }
+        if (i != num_of_devices - 1) {
+            new_entry[k] = ',';
+            k++;
+        }
+    }
+    new_entry[k] = '\n';
+
+    /* Append new line to end of file */
+    FILE *output;
+    char buffer[1024];
+    output = fopen("output-obex.txt", "a+");
+    if (output == NULL) {
+        perror("Error opening file.");
+    }
+    while (fgets(buffer, sizeof(buffer), output) != NULL) {
+        if (fputs(new_entry, output) == EOF) {
+            perror("Error appending to file");
+        }
+    }
+    fclose(output);
+
+    /* Reset global variable after storing MAC address into output and
+    increment
+     * file size */
+    for (i = 0; i < num_of_devices; i++) {
+        memset(&g_addr[i][0], 0, sizeof(g_addr[i]));
+    }
+    g_size_of_obex_file++;
+
+    /* Send new output-obex.txt file to gateway */
+    long long diff = timestamp - g_initial_timestamp_of_obex_file;
+    if (1000 >= g_size_of_obex_file || 43200000 <= diff) {
+        g_size_of_obex_file = 0;
+        // send_obex_file_to_gateway();  // TODO
+    }
+}
+
+/*
  * @fn             start_scanning
  *
  * @brief          asynchronous scanning bluetooth device
@@ -344,24 +428,30 @@ static void start_scanning() {
             ptr = buf + (1 + HCI_EVENT_HDR_SIZE);
 
             results = ptr[0];
+            // printf("Number of devices: %d\n", results);
 
             switch (hdr->evt) {
                 case EVT_INQUIRY_RESULT: {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
+                        ba2str(&info->bdaddr, g_addr[i]);
                         print_result(&info->bdaddr, 0, 0);
                     }
+                    track_obex_devices(results);
                 } break;
 
                 case EVT_INQUIRY_RESULT_WITH_RSSI: {
                     for (i = 0; i < results; i++) {
                         info_rssi = (void *)ptr + (sizeof(*info_rssi) * i) + 1;
+                        ba2str(&info_rssi->bdaddr, g_addr[i]);
                         print_result(&info_rssi->bdaddr, 1, info_rssi->rssi);
                         if (info_rssi->rssi > RSSI_RANGE) {
                             send_to_push_dongle(&info_rssi->bdaddr, 1,
                                                 info_rssi->rssi);
                         }
                     }
+                    /* results is number of scanned devices */
+                    track_obex_devices(results);
                 } break;
 
                 case EVT_INQUIRY_COMPLETE: {
@@ -371,6 +461,8 @@ static void start_scanning() {
                 default:
                     break;
             }
+
+            // track_ble_devices();
         }
     }
     printf("Scanning done\n");
@@ -382,7 +474,8 @@ static void start_scanning() {
  *
  * @brief           Working asynchronous thread of TIMEOUT cleaner. When
  * Bluetooth was
- *                  pushed by push function it addr will store in used list then
+ *                  pushed by push function it addr will store in used list
+ * then
  * wait
  *                  for timeout to be remove from list.
  *
@@ -648,7 +741,25 @@ int disable_advertising() {
 
 void ctrlc_handler(int s) { global_done = 1; }
 
-void *BLE_Beacon(void *ptr) {
+/*
+ * @fn             track_ble_devices
+ *
+ * @brief
+ *
+ * @thread_addr
+ *
+ * @return
+ */
+static void track_ble_devices() {
+    // get timestamp
+    // detect MAC addresses of ble devices under LBeacon
+
+    // format timestamp w/ MAC address
+    // send char[]/string as a line in output.txt file
+    // send file to server
+}
+
+void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
     if (rc == 0) {
         struct sigaction sigint_handler;
@@ -675,7 +786,7 @@ int main(int argc, char **argv) {
     char cmd[100];
     char ble_buffer[100]; /* HCI command for BLE beacon */
     char hex_c[32];
-    pthread_t Device_cleaner_id, BLE_beacon_id;
+    pthread_t device_cleaner_id, ble_beacon_id;
     int i;
 
     /* Load Config */
@@ -694,8 +805,8 @@ int main(int argc, char **argv) {
             coordinate_Y.b[2], coordinate_Y.b[3]);
 
     /* Device Cleaner */
-    pthread_create(&Device_cleaner_id, NULL, (void *)timeout_cleaner, NULL);
-    pthread_create(&BLE_beacon_id, NULL, (void *)BLE_Beacon, hex_c);
+    pthread_create(&device_cleaner_id, NULL, (void *)timeout_cleaner, NULL);
+    pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c);
 
     for (i = 0; i < MAX_DEVICES; i++) {
         g_device_queue.used[i] = 0;
