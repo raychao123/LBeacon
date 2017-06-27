@@ -128,7 +128,7 @@ void *send_file(void *ptr) {
 
     /* Extract basename from file path */
     filename = strrchr(g_filepath, '/');
-    printf("%s", filename);
+    printf("%s\n", filename);
     if (!filename) {
         filename = g_filepath;
     } else {
@@ -270,9 +270,9 @@ static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
 static void track_obex_devices(int num_of_devices) {
     /* Get current timestamp when tracking OBEX Bluetooth devices. If file is
      * empty, create new file with LBeacon ID. */
-    long long timestamp = get_system_time();
+    unsigned timestamp = (unsigned)time(NULL);
     char temp[64]; /* converting long long to char[] */
-    sprintf(temp, "%lld", timestamp);
+    sprintf(temp, "%u", timestamp);
     if (0 == g_size_of_obex_file) {
         /* Overwrites the file and clears the content */
         FILE *fd = fopen("output-obex.txt", "w+");
@@ -291,25 +291,28 @@ static void track_obex_devices(int num_of_devices) {
     int i = 0;
     int j = 0;
     int k = 0;
-    int size = 8 + 1 + num_of_devices * 17 + (num_of_devices - 1) + 1;
+    int size = 10 + 1 + num_of_devices * 18;
     char new_entry[size + 1];
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 10; i++) {
         new_entry[k] = temp[i];
         k++;
     }
+    new_entry[k] = ' ';
+    k++;
     new_entry[k] = '-';
+    k++;
+    new_entry[k] = ' ';
     k++;
     for (i = 0; i < num_of_devices; i++) {
         for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
             new_entry[k] = g_addr[i][j];
             k++;
         }
-        if (i != num_of_devices - 1) {
+        if (i < (num_of_devices - 1)) {
             new_entry[k] = ',';
             k++;
         }
     }
-    new_entry[k] = '\n';
 
     /* Append new line to end of file */
     FILE *output;
@@ -319,23 +322,19 @@ static void track_obex_devices(int num_of_devices) {
         perror("Error opening file.");
     }
     while (fgets(buffer, sizeof(buffer), output) != NULL) {
-        if (fputs(new_entry, output) == EOF) {
-            perror("Error appending to file");
-        }
     }
+    fputs(new_entry, output);
+    fputs("\n", output);
     fclose(output);
 
     /* Reset global variable after storing MAC address into output and
-    increment
-     * file size */
-    for (i = 0; i < num_of_devices; i++) {
-        memset(&g_addr[i][0], 0, sizeof(g_addr[i]));
-    }
+    increment file size */
+    memset(&g_addr[0], 0, sizeof(g_addr));
     g_size_of_obex_file++;
 
     /* Send new output-obex.txt file to gateway */
-    long long diff = timestamp - g_initial_timestamp_of_obex_file;
-    if (1000 >= g_size_of_obex_file || 43200000 <= diff) {
+    unsigned diff = timestamp - g_initial_timestamp_of_obex_file;
+    if (1000 <= g_size_of_obex_file || 43200 <= diff) {
         g_size_of_obex_file = 0;
         // send_obex_file_to_gateway();  // TODO
     }
@@ -428,30 +427,29 @@ static void start_scanning() {
             ptr = buf + (1 + HCI_EVENT_HDR_SIZE);
 
             results = ptr[0];
-            // printf("Number of devices: %d\n", results);
 
             switch (hdr->evt) {
                 case EVT_INQUIRY_RESULT: {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
-                        ba2str(&info->bdaddr, g_addr[i]);
+                        ba2str(&info->bdaddr, g_addr);
+                        track_obex_devices(results);
                         print_result(&info->bdaddr, 0, 0);
                     }
-                    track_obex_devices(results);
                 } break;
 
                 case EVT_INQUIRY_RESULT_WITH_RSSI: {
                     for (i = 0; i < results; i++) {
                         info_rssi = (void *)ptr + (sizeof(*info_rssi) * i) + 1;
-                        ba2str(&info_rssi->bdaddr, g_addr[i]);
+                        ba2str(&info_rssi->bdaddr, g_addr);
+                        track_obex_devices(results);
                         print_result(&info_rssi->bdaddr, 1, info_rssi->rssi);
                         if (info_rssi->rssi > RSSI_RANGE) {
                             send_to_push_dongle(&info_rssi->bdaddr, 1,
                                                 info_rssi->rssi);
                         }
                     }
-                    /* results is number of scanned devices */
-                    track_obex_devices(results);
+
                 } break;
 
                 case EVT_INQUIRY_COMPLETE: {

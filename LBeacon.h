@@ -120,16 +120,13 @@ int global_done = 0;
 //-----------------------------BLE-----------------------------------------
 
 // Used for tracking MAC addresses of scanned devices
-char g_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
+char g_addr[LEN_OF_MAC_ADDRESS] = {0};
 
 // Number of lines in the OBEX output file
 int g_size_of_obex_file = 0;
 
 // The first time of the OBEX output file
-long long g_initial_timestamp_of_obex_file = 0;
-
-// Number of lines in the BLE output file
-int g_size_of_ble_file = 0;
+unsigned g_initial_timestamp_of_obex_file = 0;
 
 // Used for handling pushed users and bluetooth device addr
 char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
