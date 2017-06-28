@@ -430,14 +430,14 @@ static void start_scanning() {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
                         print_result(&info->bdaddr, 0, 0);
-                        track_devices(&info->bdaddr, "output-obex.txt");
+                        track_devices(&info->bdaddr, "output.txt");
                     }
                 } break;
 
                 case EVT_INQUIRY_RESULT_WITH_RSSI: {
                     for (i = 0; i < results; i++) {
                         info_rssi = (void *)ptr + (sizeof(*info_rssi) * i) + 1;
-                        track_devices(&info_rssi->bdaddr, "output-obex.txt");
+                        track_devices(&info_rssi->bdaddr, "output.txt");
                         print_result(&info_rssi->bdaddr, 1, info_rssi->rssi);
                         if (info_rssi->rssi > RSSI_RANGE) {
                             send_to_push_dongle(&info_rssi->bdaddr, 1,
@@ -453,8 +453,6 @@ static void start_scanning() {
                 default:
                     break;
             }
-
-            // track_ble_devices();
         }
     }
     printf("Scanning done\n");
@@ -732,24 +730,6 @@ int disable_advertising() {
 }
 
 void ctrlc_handler(int s) { global_done = 1; }
-
-/*
- * @fn             track_ble_devices
- *
- * @brief
- *
- * @thread_addr
- *
- * @return
- */
-static void track_ble_devices() {
-    // get timestamp
-    // detect MAC addresses of ble devices under LBeacon
-
-    // format timestamp w/ MAC address
-    // send char[]/string as a line in output.txt file
-    // send file to server
-}
 
 void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
