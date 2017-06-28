@@ -328,13 +328,13 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         fclose(output);
     }
 
-    /* Send new file to gateway */
-    unsigned diff = timestamp - g_initial_timestamp_of_file;
-    if (1000 <= g_size_of_file || 21600 <= diff) {
-        g_size_of_file = 0;
-        g_most_recent_timestamp_of_file = 0;
-        // send_file_to_gateway();  // TODO
-    }
+    /* TODO: Send new file to gateway */
+    // unsigned diff = timestamp - g_initial_timestamp_of_file;
+    // if (1000 <= g_size_of_file || 21600 <= diff) {
+    //     g_size_of_file = 0;
+    //     g_most_recent_timestamp_of_file = 0;
+    //     // send_file_to_gateway();
+    // }
 }
 
 /*
