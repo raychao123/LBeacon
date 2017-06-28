@@ -263,15 +263,20 @@ static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
  * @brief           track the scanned MAC addresses of OBEX devices under the
  *                  LBeacon at a time
  *
- * @thread_addr     num_of_devices - number of scanned devices at a given time
+ * @thread_addr     none
  *
  * @return          none
  */
-static void track_obex_devices(int num_of_devices) {
+static void track_obex_devices(bdaddr_t *bdaddr) {
+    /* Initialize variables */
+    int i = 0;
+    int j = 0;
+    int k = 0;
+
     /* Get current timestamp when tracking OBEX Bluetooth devices. If file is
      * empty, create new file with LBeacon ID. */
     unsigned timestamp = (unsigned)time(NULL);
-    char temp[64]; /* converting long long to char[] */
+    char temp[10]; /* converting long long to char[] */
     sprintf(temp, "%u", timestamp);
     if (0 == g_size_of_obex_file) {
         /* Overwrites the file and clears the content */
@@ -279,63 +284,60 @@ static void track_obex_devices(int num_of_devices) {
         if (fd == NULL) {
             perror("Error opening file.");
         }
-        fputs("LBeacon ID: ########\n", fd);
+        fputs("LBeacon ID: ########", fd);
         fclose(fd);
         g_size_of_obex_file++; /* increment line */
         g_initial_timestamp_of_obex_file = timestamp;
+        memset(&g_addr[0], 0, sizeof(g_addr));
     }
 
-    /* Format timestamp and MAC addresses into a char[]; ":" to separate
-     * timestamp with MAC address and "," to separate different MAC addresses
-     */
-    int i = 0;
-    int j = 0;
-    int k = 0;
-    int size = 10 + 1 + num_of_devices * 18;
-    char new_entry[size + 1];
-    for (i = 0; i < 10; i++) {
-        new_entry[k] = temp[i];
-        k++;
-    }
-    new_entry[k] = ' ';
-    k++;
-    new_entry[k] = '-';
-    k++;
-    new_entry[k] = ' ';
-    k++;
-    for (i = 0; i < num_of_devices; i++) {
-        for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-            new_entry[k] = g_addr[i][j];
-            k++;
+    /* If timestamp already exists add MAC address to end of previous line, else
+     * create new line */
+    ba2str(bdaddr, g_addr);
+    if (timestamp != g_most_recent_timestamp_of_obex_file) {
+        /* Format timestamp and MAC addresses into a char[] and append new line
+         * to end of file; ":" to separate timestamp with MAC address and "," to
+         * separate different MAC addresses */
+        FILE *output;
+        char buffer[1024];
+        output = fopen("output-obex.txt", "a+");
+        if (output == NULL) {
+            perror("Error opening file.");
         }
-        if (i < (num_of_devices - 1)) {
-            new_entry[k] = ',';
-            k++;
+        while (fgets(buffer, sizeof(buffer), output) != NULL) {
         }
-    }
+        fputs("\n", output);
+        fputs(temp, output);
+        fputs(" - ", output);
+        fputs(g_addr, output);
+        fclose(output);
 
-    /* Append new line to end of file */
-    FILE *output;
-    char buffer[1024];
-    output = fopen("output-obex.txt", "a+");
-    if (output == NULL) {
-        perror("Error opening file.");
+        /* Reset global variable after storing MAC address into output and
+         * increment file size */
+        g_most_recent_timestamp_of_obex_file = timestamp;
+        g_size_of_obex_file++;
+    } else {
+        FILE *output;
+        char buffer[1024];
+        output = fopen("output-obex.txt", "a+");
+        if (output == NULL) {
+            perror("Error opening file.");
+        }
+        while (fgets(buffer, sizeof(buffer), output) != NULL) {
+        }
+        if (strstr(buffer, g_addr) == NULL) {
+            fseek(output, -strlen(buffer), SEEK_END);
+            fputs(", ", output);
+            fputs(g_addr, output);
+        }
+        fclose(output);
     }
-    while (fgets(buffer, sizeof(buffer), output) != NULL) {
-    }
-    fputs(new_entry, output);
-    fputs("\n", output);
-    fclose(output);
-
-    /* Reset global variable after storing MAC address into output and
-    increment file size */
-    memset(&g_addr[0], 0, sizeof(g_addr));
-    g_size_of_obex_file++;
 
     /* Send new output-obex.txt file to gateway */
     unsigned diff = timestamp - g_initial_timestamp_of_obex_file;
-    if (1000 <= g_size_of_obex_file || 43200 <= diff) {
+    if (1000 <= g_size_of_obex_file || 21600 <= diff) {
         g_size_of_obex_file = 0;
+        g_most_recent_timestamp_of_obex_file = 0;
         // send_obex_file_to_gateway();  // TODO
     }
 }
@@ -432,24 +434,21 @@ static void start_scanning() {
                 case EVT_INQUIRY_RESULT: {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
-                        ba2str(&info->bdaddr, g_addr);
-                        track_obex_devices(results);
                         print_result(&info->bdaddr, 0, 0);
+                        // track_obex_devices(&info->bdaddr);
                     }
                 } break;
 
                 case EVT_INQUIRY_RESULT_WITH_RSSI: {
                     for (i = 0; i < results; i++) {
                         info_rssi = (void *)ptr + (sizeof(*info_rssi) * i) + 1;
-                        ba2str(&info_rssi->bdaddr, g_addr);
-                        track_obex_devices(results);
+                        track_obex_devices(&info_rssi->bdaddr);
                         print_result(&info_rssi->bdaddr, 1, info_rssi->rssi);
                         if (info_rssi->rssi > RSSI_RANGE) {
                             send_to_push_dongle(&info_rssi->bdaddr, 1,
                                                 info_rssi->rssi);
                         }
                     }
-
                 } break;
 
                 case EVT_INQUIRY_COMPLETE: {
