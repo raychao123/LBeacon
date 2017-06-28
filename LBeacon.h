@@ -122,14 +122,14 @@ int global_done = 0;
 // Used for tracking MAC addresses of scanned devices
 char g_addr[LEN_OF_MAC_ADDRESS] = {0};
 
-// Number of lines in the OBEX output file
-int g_size_of_obex_file = 0;
+// Number of lines in the output file
+int g_size_of_file = 0;
 
-// The first time of the OBEX output file
-unsigned g_initial_timestamp_of_obex_file = 0;
+// The first time of the output file
+unsigned g_initial_timestamp_of_file = 0;
 
-// The most recent time of the OBEX output file
-unsigned g_most_recent_timestamp_of_obex_file = 0;
+// The most recent time of the output file
+unsigned g_most_recent_timestamp_of_file = 0;
 
 // Used for handling pushed users and bluetooth device addr
 char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
@@ -218,8 +218,8 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi);
 // Print the result of RSSI value for each case
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi);
 
-// Track scanned MAC addresses of OBEX devices
-static void track_obex_devices(bdaddr_t *bdaddr);
+// Track scanned MAC addresses
+static void track_devices(bdaddr_t *bdaddr, char *filename);
 
 // Start scanning bluetooth device
 static void start_scanning();
