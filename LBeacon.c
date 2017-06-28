@@ -326,7 +326,7 @@ static void track_obex_devices(bdaddr_t *bdaddr) {
         while (fgets(buffer, sizeof(buffer), output) != NULL) {
         }
         if (strstr(buffer, g_addr) == NULL) {
-            fseek(output, -strlen(buffer), SEEK_END);
+            // fseek(output, -strlen(buffer), SEEK_END);
             fputs(", ", output);
             fputs(g_addr, output);
         }
@@ -435,7 +435,7 @@ static void start_scanning() {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
                         print_result(&info->bdaddr, 0, 0);
-                        // track_obex_devices(&info->bdaddr);
+                        track_obex_devices(&info->bdaddr);
                     }
                 } break;
 
