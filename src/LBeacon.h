@@ -42,6 +42,7 @@
 #include "bluetooth/hci.h"
 #include "bluetooth/hci_lib.h"
 #include "ctype.h"
+#include "dirent.h"  //used for choose_file
 #include "errno.h"
 #include "limits.h"
 #include "netdb.h"
@@ -67,7 +68,7 @@
  */
 
 // The name of the config file
-#define CONFIG_FILENAME "config.conf"
+#define CONFIG_FILENAME "../config/config.conf"
 
 // Read the parameter after "=" from config file
 #define DELIMITER "="
@@ -110,7 +111,6 @@
 
 //-----------------------------BLE-----------------------------------------
 #define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
-
 #define EIR_FLAGS 0X01
 #define EIR_NAME_SHORT 0x08
 #define EIR_NAME_COMPLETE 0x09
@@ -118,6 +118,18 @@
 
 int global_done = 0;
 //-----------------------------BLE-----------------------------------------
+
+// Used for tracking MAC addresses of scanned devices
+char g_addr[LEN_OF_MAC_ADDRESS] = {0};
+
+// Number of lines in the output file
+int g_size_of_file = 0;
+
+// The first time of the output file
+unsigned g_initial_timestamp_of_file = 0;
+
+// The most recent time of the output file
+unsigned g_most_recent_timestamp_of_file = 0;
 
 // Used for handling pushed users and bluetooth device addr
 char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
@@ -127,6 +139,9 @@ int g_idle_handler[MAX_DEVICES] = {0};
 
 // Path of object push file
 char *g_filepath;
+
+// Saving the MAC address so it can be stored into database
+char g_saved_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
 /*
  * UNION
@@ -155,12 +170,16 @@ typedef struct Config {
     char filepath[MAX_BUFFER];
     char level[MAX_BUFFER];
     char rssi_coverage[MAX_BUFFER];
+    char num_groups[MAX_BUFFER];
+    char num_messages[MAX_BUFFER];
     int coordinate_X_len;
     int coordinate_Y_len;
     int filename_len;
     int filepath_len;
     int level_len;
     int rssi_coverage_len;
+    int num_groups_len;
+    int num_messages_len;
 } Config;
 
 // Store config information from the passed in file
@@ -203,6 +222,9 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi);
 // Print the result of RSSI value for each case
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi);
 
+// Track scanned MAC addresses
+static void track_devices(bdaddr_t *bdaddr, char *filename);
+
 // Start scanning bluetooth device
 static void start_scanning();
 
@@ -211,3 +233,5 @@ void *timeout_cleaner(void);
 
 // Read parameter from config file
 Config get_config(char *filename);
+
+char *choose_file(char *messagetosend);

@@ -14,6 +14,7 @@
  *                   Bluetooth address. Depending on the RSSI value, it will
  *                   determine if it should location related files to the user.
  *                   The detection is based on BLE or OBEX.
+ *
  * File Name:
  *
  *      LBeacon.c
@@ -36,9 +37,6 @@
  */
 
 #include "LBeacon.h"
-
-// gcc LBeacon.c -g -o LBeacon -L/usr/local/lib -lrt -lpthread -lmulticobex
-// -lbfb -lbluetooth -lobexftp -lopenobex
 
 /*
  * @fn             get_system_time
@@ -130,7 +128,7 @@ void *send_file(void *ptr) {
 
     /* Extract basename from file path */
     filename = strrchr(g_filepath, '/');
-    printf("%s", filename);
+    printf("%s\n", filename);
     if (!filename) {
         filename = g_filepath;
     } else {
@@ -248,6 +246,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
  */
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
     char addr[LEN_OF_MAC_ADDRESS];
+    // char *file = choose_file("message1");
     ba2str(bdaddr, addr);
     printf("%17s", addr);
     if (has_rssi) {
@@ -257,6 +256,86 @@ static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
     }
     printf("\n");
     fflush(NULL);
+}
+
+/*
+ * @fn              track_devices
+ *
+ * @brief           track the scanned MAC addresses under the LBeacon at a time
+ *
+ * @thread_addr     none
+ *
+ * @return          none
+ */
+static void track_devices(bdaddr_t *bdaddr, char *filename) {
+    /* Initialize variables */
+    int i = 0;
+    int j = 0;
+    int k = 0;
+
+    /* Get current timestamp when tracking Bluetooth devices. If file is empty,
+     * create new file with LBeacon ID. */
+    unsigned timestamp = (unsigned)time(NULL);
+    char temp[10]; /* converting long long to char[] */
+    sprintf(temp, "%u", timestamp);
+    if (0 == g_size_of_file) {
+        /* Overwrites the file and clears the content */
+        FILE *fd = fopen(filename, "w+");
+        if (fd == NULL) {
+            perror("Error opening file.");
+        }
+        fputs("LBeacon ID: ########", fd);
+        fclose(fd);
+        g_size_of_file++; /* increment line */
+        g_initial_timestamp_of_file = timestamp;
+        memset(&g_addr[0], 0, sizeof(g_addr));
+    }
+
+    /* If timestamp already exists add MAC address to end of previous line, else
+     * create new line. Format timestamp and MAC addresses into a char[] and
+     * append new line to end of file; ":" to separate timestamp with MAC
+     * address and "," to separate different MAC addresses */
+    ba2str(bdaddr, g_addr);
+    if (timestamp != g_most_recent_timestamp_of_file) {
+        FILE *output;
+        char buffer[1024];
+        output = fopen(filename, "a+");
+        if (output == NULL) {
+            perror("Error opening file.");
+        }
+        while (fgets(buffer, sizeof(buffer), output) != NULL) {
+        }
+        fputs("\n", output);
+        fputs(temp, output);
+        fputs(" - ", output);
+        fputs(g_addr, output);
+        fclose(output);
+
+        g_most_recent_timestamp_of_file = timestamp;
+        g_size_of_file++;
+    } else {
+        FILE *output;
+        char buffer[1024];
+        output = fopen(filename, "a+");
+        if (output == NULL) {
+            perror("Error opening file.");
+        }
+        while (fgets(buffer, sizeof(buffer), output) != NULL) {
+        }
+        if (strstr(buffer, g_addr) == NULL) {
+            fputs(", ", output);
+            fputs(g_addr, output);
+        }
+        fclose(output);
+    }
+
+    /* TODO: Send new file to gateway */
+    // unsigned diff = timestamp - g_initial_timestamp_of_file;
+    // if (1000 <= g_size_of_file || 21600 <= diff) {
+    //     g_size_of_file = 0;
+    //     g_most_recent_timestamp_of_file = 0;
+    //     // send_file_to_gateway();
+    // }
 }
 
 /*
@@ -352,12 +431,14 @@ static void start_scanning() {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
                         print_result(&info->bdaddr, 0, 0);
+                        track_devices(&info->bdaddr, "output.txt");
                     }
                 } break;
 
                 case EVT_INQUIRY_RESULT_WITH_RSSI: {
                     for (i = 0; i < results; i++) {
                         info_rssi = (void *)ptr + (sizeof(*info_rssi) * i) + 1;
+                        track_devices(&info_rssi->bdaddr, "output.txt");
                         print_result(&info_rssi->bdaddr, 1, info_rssi->rssi);
                         if (info_rssi->rssi > RSSI_RANGE) {
                             send_to_push_dongle(&info_rssi->bdaddr, 1,
@@ -384,7 +465,8 @@ static void start_scanning() {
  *
  * @brief           Working asynchronous thread of TIMEOUT cleaner. When
  * Bluetooth was
- *                  pushed by push function it addr will store in used list then
+ *                  pushed by push function it addr will store in used list
+ * then
  * wait
  *                  for timeout to be remove from list.
  *
@@ -412,11 +494,80 @@ void *timeout_cleaner(void) {
 }
 
 /*
+ * @fn             choose_file
+ *
+ * @brief          receive command and then pick file to send to user
+ *
+ * @thread_addr
+ *
+ * @return         returns the correct message file to send
+ */
+/*char *concatenate(const char *str1, const char *str2) {
+    char *result = malloc(strlen(str1) + strlen(str2) + 1);
+    strcpy(result, str1);
+    strcat(result, str2);
+    return result;
+}*/
+
+char *choose_file(char *messagetosend) {
+    char messages[(int)g_config.num_messages][256];
+    char groups[(int)g_config.num_groups][256];
+    int count = 0;
+    DIR *groupdir;
+    struct dirent *groupent;
+    groupdir = opendir("/home/pi/LBeacon/messages/");
+    if (groupdir) {
+        /* stores all the files and directories within directory */
+        while ((groupent = readdir(groupdir)) != NULL) {
+            // groups[count] = groupent->d_name;
+            snprintf(groups[count], strlen(groupent->d_name), groupent->d_name);
+            count++;
+        }
+        closedir(groupdir);
+    } else {
+        /* could not open directory */
+        perror("Could not open group directory");
+        return NULL;
+    }
+
+    count = 0;
+    char path[80];
+    for (count = 0; count < ((int)g_config.num_messages); count++) {
+        /* combine strings to make file path */
+        sprintf(path, "/home/pi/LBeacon/messages/");
+        strcat(path, groups[count]);
+        DIR *messagedir;
+        struct dirent *messageent;
+        messagedir = opendir(path);
+        if (messagedir) {
+            /* go through and store each file name */
+            while ((messageent = readdir(messagedir)) != NULL) {
+                //  messages[count] = messageent->d_name;
+                snprintf(messages[count], strlen(messageent->d_name),
+                         messageent->d_name);
+                printf("%s\n", messages[count]);
+                if (strcmp(messages[count], messagetosend) == 0) {
+                    // printf("%s\n", messages[count]);
+                    // return message[count];
+                }
+
+                count++;
+            }
+            closedir(messagedir);
+        } else {
+            perror("Could not open message directory");
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
+/*
  * @fn             get_config
  *
  * @brief          Read the config file and initialize parameters.
  *
- * @thread_addr    filename - ame of config file
+ * @thread_addr    filename - name of config file
  *
  * @return         Config struct including filepath, coordinates, etc.
  */
@@ -460,6 +611,14 @@ Config get_config(char *filename) {
                        strlen(config_message));
                 config.rssi_coverage_len = strlen(config_message);
                 /* printf("%s",config.coordinate_X); */
+            } else if (6 == i) {
+                memcpy(config.num_groups, config_message,
+                       strlen(config_message));
+                config.num_groups_len = strlen(config_message);
+            } else if (7 == i) {
+                memcpy(config.num_messages, config_message,
+                       strlen(config_message));
+                config.num_messages_len = strlen(config_message);
             }
             i++;
             /* End while */
@@ -470,9 +629,10 @@ Config get_config(char *filename) {
 
     return config;
 }
-// Start-----------------------------BLE---------------------------------------
+
+/* Start BLE */
 /*
- * @fn             BLE Initialization
+ * @fn             uuid_str_to_data
  *
  * @brief          Initializes the BLE
  *
@@ -615,8 +775,9 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
         return (1);
     }
 }
+
 /*
- * @fn             disable advertising
+ * @fn             disable_advertising
  *
  * @brief          disables the advertising capabilities
  *
@@ -667,7 +828,7 @@ int disable_advertising() {
 void ctrlc_handler(int s) { global_done = 1; }
 
 /*
- * @fn             BLE Beacon
+ * @fn             ble_beacon
  *
  * @brief          BLE Beacon Initialization
  *
@@ -675,7 +836,7 @@ void ctrlc_handler(int s) { global_done = 1; }
  *
  * @return         none
  */
-void *BLE_Beacon(void *ptr) {
+void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
     if (rc == 0) {
         struct sigaction sigint_handler;
@@ -702,11 +863,9 @@ int main(int argc, char **argv) {
     char cmd[100];
     char ble_buffer[100]; /* HCI command for BLE beacon */
     char hex_c[32];
-    pthread_t Device_cleaner_id, BLE_beacon_id;
+    pthread_t device_cleaner_id, ble_beacon_id;
     int i;
-    // E2 C5 6D B5 DF FB 48 D2 B0 60 D0 F5 11 11 11 11
-
-    //*-----Load config--------start
+    /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
     g_filepath = malloc(g_config.filepath_len + g_config.filename_len);
     memcpy(g_filepath, g_config.filepath, g_config.filepath_len - 1);
@@ -720,11 +879,10 @@ int main(int argc, char **argv) {
             coordinate_X.b[0], coordinate_X.b[1], coordinate_X.b[2],
             coordinate_X.b[3], coordinate_Y.b[0], coordinate_Y.b[1],
             coordinate_Y.b[2], coordinate_Y.b[3]);
-    //*-----Load config--------end
 
     /* Device Cleaner */
-    pthread_create(&Device_cleaner_id, NULL, (void *)timeout_cleaner, NULL);
-    pthread_create(&BLE_beacon_id, NULL, (void *)BLE_Beacon, hex_c);
+    pthread_create(&device_cleaner_id, NULL, (void *)timeout_cleaner, NULL);
+    pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c);
 
     for (i = 0; i < MAX_DEVICES; i++) {
         g_device_queue.used[i] = 0;

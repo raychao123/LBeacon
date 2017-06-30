@@ -34,3 +34,6 @@
 # LBeacon build files
 LBeacon
 ftp-sync.json
+
+# For Mac
+.DS_Store
