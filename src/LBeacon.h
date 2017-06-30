@@ -42,7 +42,7 @@
 #include "bluetooth/hci.h"
 #include "bluetooth/hci_lib.h"
 #include "ctype.h"
-#include "dirent.h"  //used for choose_file
+#include "dirent.h"
 #include "errno.h"
 #include "limits.h"
 #include "netdb.h"

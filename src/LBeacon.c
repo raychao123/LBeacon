@@ -245,8 +245,9 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
  * @return         none
  */
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
+    char *ret = choose_file("message1");
+    // printf("%s\n", ret);
     char addr[LEN_OF_MAC_ADDRESS];
-    // char *file = choose_file("message1");
     ba2str(bdaddr, addr);
     printf("%17s", addr);
     if (has_rssi) {
@@ -364,7 +365,7 @@ static void start_scanning() {
     struct pollfd p;
 
     dev_id = SCAN_DONGLE;
-    printf("%d", dev_id);
+    // printf("%d", dev_id);
 
     /* Open Bluetooth device */
     socket = hci_open_dev(dev_id);
@@ -502,63 +503,70 @@ void *timeout_cleaner(void) {
  *
  * @return         returns the correct message file to send
  */
-/*char *concatenate(const char *str1, const char *str2) {
-    char *result = malloc(strlen(str1) + strlen(str2) + 1);
-    strcpy(result, str1);
-    strcat(result, str2);
-    return result;
-}*/
-
 char *choose_file(char *messagetosend) {
-    char messages[(int)g_config.num_messages][256];
-    char groups[(int)g_config.num_groups][256];
+    // printf("%s\n", "choose_file entered");
+    int num_messages = atoi(g_config.num_messages);
+    int num_groups = atoi(g_config.num_groups);
+    char messages[num_messages][256];
+    char groups[num_groups][256];
     int count = 0;
+    int i = 0;
     DIR *groupdir;
     struct dirent *groupent;
     groupdir = opendir("/home/pi/LBeacon/messages/");
     if (groupdir) {
         /* stores all the files and directories within directory */
         while ((groupent = readdir(groupdir)) != NULL) {
-            // groups[count] = groupent->d_name;
-            snprintf(groups[count], strlen(groupent->d_name), groupent->d_name);
-            count++;
+            if (strcmp(groupent->d_name, ".") != 0 &&
+                strcmp(groupent->d_name, "..") != 0) {
+                strcpy(groups[count], groupent->d_name);
+                // printf("%d, %s\n", count, groups[count]);
+                count++;
+            }
         }
         closedir(groupdir);
     } else {
         /* could not open directory */
-        perror("Could not open group directory");
+        perror("Directories do not exist");
         return NULL;
     }
-
+    char path[256];
+    char *ret;
+    memset(path, 0, 256);
     count = 0;
-    char path[80];
-    for (count = 0; count < ((int)g_config.num_messages); count++) {
+    for (i = 0; i < num_groups; i++) {
         /* combine strings to make file path */
         sprintf(path, "/home/pi/LBeacon/messages/");
-        strcat(path, groups[count]);
+        strcat(path, groups[i]);
+        // printf("%s\n", path);
         DIR *messagedir;
         struct dirent *messageent;
         messagedir = opendir(path);
         if (messagedir) {
-            /* go through and store each file name */
+            /* go through each message in directory and store each file name */
             while ((messageent = readdir(messagedir)) != NULL) {
-                //  messages[count] = messageent->d_name;
-                snprintf(messages[count], strlen(messageent->d_name),
-                         messageent->d_name);
-                printf("%s\n", messages[count]);
-                if (strcmp(messages[count], messagetosend) == 0) {
-                    // printf("%s\n", messages[count]);
-                    // return message[count];
+                if (strcmp(messageent->d_name, ".") != 0 &&
+                    strcmp(messageent->d_name, "..") != 0) {
+                    strcpy(messages[count], messageent->d_name);
+                    // printf("%d, %s\n", count, messages[count]);
+                    if (strcmp(messages[count], messagetosend) == 0) {
+                        strcat(path, "/");
+                        strcat(path, messages[count]);
+                        // printf("%s\n", path);
+                        ret = &path[0];
+                        return ret;
+                    }
+                    count++;
                 }
-
-                count++;
             }
             closedir(messagedir);
         } else {
-            perror("Could not open message directory");
+            /* could not open messages */
+            perror("Message files do not exist");
             return NULL;
         }
     }
+    perror("Message files do not exist");
     return NULL;
 }
 
@@ -882,7 +890,7 @@ int main(int argc, char **argv) {
            g_config.filename_len - 1);
     coordinate_X.f = (float)atof(g_config.coordinate_X);
     coordinate_Y.f = (float)atof(g_config.coordinate_Y);
-    printf("%f\n", coordinate_X.f);
+    // printf("%f\n", coordinate_X.f);
 
     sprintf(hex_c, "E2C56DB5DFFB48D2B060D0F5%02x%02x%02x%02x%02x%02x%02x%02x",
             coordinate_X.b[0], coordinate_X.b[1], coordinate_X.b[2],
