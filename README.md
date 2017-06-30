@@ -16,19 +16,19 @@ $ sudo apt-get install -y git bluez libbluetooth-dev fuse libfuse-dev libexpat1-
 ```
 Download open source code for obexftp and openobex libraries:
 ```sh
-$ git clone https://gitlab.com/obexftp/mainline obexftp
 $ git clone https://gitlab.com/openobex/mainline openobex
+$ git clone https://gitlab.com/obexftp/mainline obexftp
 ```
-To compile and install openftp and openobex libraries:
+To compile and install openobex and openftp libraries:
 ```sh
-$ cd obexftp
+$ cd openobex
 $ mkdir build
 $ cd build
 $ cmake ..
 $ sudo make
 $ sudo make install
 $ cd ../../
-$ cd openobex
+$ cd obexftp
 $ mkdir build
 $ cd build
 $ cmake ..

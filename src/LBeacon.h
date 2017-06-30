@@ -112,13 +112,25 @@
 //-----------------------------BLE-----------------------------------------
 #define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 
-#define EIR_FLAGS                   0X01
-#define EIR_NAME_SHORT              0x08
-#define EIR_NAME_COMPLETE           0x09
-#define EIR_MANUFACTURE_SPECIFIC    0xFF
+#define EIR_FLAGS 0X01
+#define EIR_NAME_SHORT 0x08
+#define EIR_NAME_COMPLETE 0x09
+#define EIR_MANUFACTURE_SPECIFIC 0xFF
 
 int global_done = 0;
 //-----------------------------BLE-----------------------------------------
+
+// Used for tracking MAC addresses of scanned devices
+char g_addr[LEN_OF_MAC_ADDRESS] = {0};
+
+// Number of lines in the output file
+int g_size_of_file = 0;
+
+// The first time of the output file
+unsigned g_initial_timestamp_of_file = 0;
+
+// The most recent time of the output file
+unsigned g_most_recent_timestamp_of_file = 0;
 
 // Used for handling pushed users and bluetooth device addr
 char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
@@ -210,6 +222,9 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi);
 
 // Print the result of RSSI value for each case
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi);
+
+// Track scanned MAC addresses
+static void track_devices(bdaddr_t *bdaddr, char *filename);
 
 // Start scanning bluetooth device
 static void start_scanning();

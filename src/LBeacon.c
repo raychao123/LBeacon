@@ -128,7 +128,7 @@ void *send_file(void *ptr) {
 
     /* Extract basename from file path */
     filename = strrchr(g_filepath, '/');
-    printf("%s", filename);
+    printf("%s\n", filename);
     if (!filename) {
         filename = g_filepath;
     } else {
@@ -259,6 +259,86 @@ static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
 }
 
 /*
+ * @fn              track_devices
+ *
+ * @brief           track the scanned MAC addresses under the LBeacon at a time
+ *
+ * @thread_addr     none
+ *
+ * @return          none
+ */
+static void track_devices(bdaddr_t *bdaddr, char *filename) {
+    /* Initialize variables */
+    int i = 0;
+    int j = 0;
+    int k = 0;
+
+    /* Get current timestamp when tracking Bluetooth devices. If file is empty,
+     * create new file with LBeacon ID. */
+    unsigned timestamp = (unsigned)time(NULL);
+    char temp[10]; /* converting long long to char[] */
+    sprintf(temp, "%u", timestamp);
+    if (0 == g_size_of_file) {
+        /* Overwrites the file and clears the content */
+        FILE *fd = fopen(filename, "w+");
+        if (fd == NULL) {
+            perror("Error opening file.");
+        }
+        fputs("LBeacon ID: ########", fd);
+        fclose(fd);
+        g_size_of_file++; /* increment line */
+        g_initial_timestamp_of_file = timestamp;
+        memset(&g_addr[0], 0, sizeof(g_addr));
+    }
+
+    /* If timestamp already exists add MAC address to end of previous line, else
+     * create new line. Format timestamp and MAC addresses into a char[] and
+     * append new line to end of file; ":" to separate timestamp with MAC
+     * address and "," to separate different MAC addresses */
+    ba2str(bdaddr, g_addr);
+    if (timestamp != g_most_recent_timestamp_of_file) {
+        FILE *output;
+        char buffer[1024];
+        output = fopen(filename, "a+");
+        if (output == NULL) {
+            perror("Error opening file.");
+        }
+        while (fgets(buffer, sizeof(buffer), output) != NULL) {
+        }
+        fputs("\n", output);
+        fputs(temp, output);
+        fputs(" - ", output);
+        fputs(g_addr, output);
+        fclose(output);
+
+        g_most_recent_timestamp_of_file = timestamp;
+        g_size_of_file++;
+    } else {
+        FILE *output;
+        char buffer[1024];
+        output = fopen(filename, "a+");
+        if (output == NULL) {
+            perror("Error opening file.");
+        }
+        while (fgets(buffer, sizeof(buffer), output) != NULL) {
+        }
+        if (strstr(buffer, g_addr) == NULL) {
+            fputs(", ", output);
+            fputs(g_addr, output);
+        }
+        fclose(output);
+    }
+
+    /* TODO: Send new file to gateway */
+    // unsigned diff = timestamp - g_initial_timestamp_of_file;
+    // if (1000 <= g_size_of_file || 21600 <= diff) {
+    //     g_size_of_file = 0;
+    //     g_most_recent_timestamp_of_file = 0;
+    //     // send_file_to_gateway();
+    // }
+}
+
+/*
  * @fn             start_scanning
  *
  * @brief          asynchronous scanning bluetooth device
@@ -351,12 +431,14 @@ static void start_scanning() {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
                         print_result(&info->bdaddr, 0, 0);
+                        track_devices(&info->bdaddr, "output.txt");
                     }
                 } break;
 
                 case EVT_INQUIRY_RESULT_WITH_RSSI: {
                     for (i = 0; i < results; i++) {
                         info_rssi = (void *)ptr + (sizeof(*info_rssi) * i) + 1;
+                        track_devices(&info_rssi->bdaddr, "output.txt");
                         print_result(&info_rssi->bdaddr, 1, info_rssi->rssi);
                         if (info_rssi->rssi > RSSI_RANGE) {
                             send_to_push_dongle(&info_rssi->bdaddr, 1,
@@ -383,7 +465,8 @@ static void start_scanning() {
  *
  * @brief           Working asynchronous thread of TIMEOUT cleaner. When
  * Bluetooth was
- *                  pushed by push function it addr will store in used list then
+ *                  pushed by push function it addr will store in used list
+ * then
  * wait
  *                  for timeout to be remove from list.
  *
@@ -726,7 +809,7 @@ int disable_advertising() {
 
 void ctrlc_handler(int s) { global_done = 1; }
 
-void *BLE_Beacon(void *ptr) {
+void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
     if (rc == 0) {
         struct sigaction sigint_handler;
@@ -753,7 +836,7 @@ int main(int argc, char **argv) {
     char cmd[100];
     char ble_buffer[100]; /* HCI command for BLE beacon */
     char hex_c[32];
-    pthread_t Device_cleaner_id, BLE_beacon_id;
+    pthread_t device_cleaner_id, ble_beacon_id;
     int i;
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
@@ -771,8 +854,8 @@ int main(int argc, char **argv) {
             coordinate_Y.b[2], coordinate_Y.b[3]);
 
     /* Device Cleaner */
-    pthread_create(&Device_cleaner_id, NULL, (void *)timeout_cleaner, NULL);
-    pthread_create(&BLE_beacon_id, NULL, (void *)BLE_Beacon, hex_c);
+    pthread_create(&device_cleaner_id, NULL, (void *)timeout_cleaner, NULL);
+    pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c);
 
     for (i = 0; i < MAX_DEVICES; i++) {
         g_device_queue.used[i] = 0;
