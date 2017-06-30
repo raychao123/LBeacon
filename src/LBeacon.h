@@ -42,6 +42,7 @@
 #include "bluetooth/hci.h"
 #include "bluetooth/hci_lib.h"
 #include "ctype.h"
+#include "dirent.h"  //used for choose_file
 #include "errno.h"
 #include "limits.h"
 #include "netdb.h"
@@ -67,7 +68,7 @@
  */
 
 // The name of the config file
-#define CONFIG_FILENAME "config.conf"
+#define CONFIG_FILENAME "../config/config.conf"
 
 // Read the parameter after "=" from config file
 #define DELIMITER "="
@@ -158,12 +159,16 @@ typedef struct Config {
     char filepath[MAX_BUFFER];
     char level[MAX_BUFFER];
     char rssi_coverage[MAX_BUFFER];
+    char num_groups[MAX_BUFFER];
+    char num_messages[MAX_BUFFER];
     int coordinate_X_len;
     int coordinate_Y_len;
     int filename_len;
     int filepath_len;
     int level_len;
     int rssi_coverage_len;
+    int num_groups_len;
+    int num_messages_len;
 } Config;
 
 // Store config information from the passed in file
@@ -214,3 +219,5 @@ void *timeout_cleaner(void);
 
 // Read parameter from config file
 Config get_config(char *filename);
+
+char *choose_file(char *messagetosend);
