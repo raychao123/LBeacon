@@ -110,7 +110,7 @@
 #define TIMEOUT 20000
 
 //-----------------------------BLE-----------------------------------------
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 #define EIR_FLAGS 0X01
 #define EIR_NAME_SHORT 0x08
 #define EIR_NAME_COMPLETE 0x09
