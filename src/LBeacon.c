@@ -631,6 +631,15 @@ Config get_config(char *filename) {
 }
 
 /* Start BLE */
+/*
+ * @fn             uuid_str_to_data
+ *
+ * @brief          Initializes the BLE
+ *
+ * @thread_addr    uuid - unique identifier
+ *
+ * @return         data value
+ */
 unsigned int *uuid_str_to_data(char *uuid) {
     char conv[] = "0123456789ABCDEF";
     int len = strlen(uuid);
@@ -767,6 +776,15 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     }
 }
 
+/*
+ * @fn             disable_advertising
+ *
+ * @brief          disables the advertising capabilities
+ *
+ * @thread_addr    none
+ *
+ * @return         returns 1 if successful
+ */
 int disable_advertising() {
     int device_id = hci_get_route(NULL);
 
@@ -809,6 +827,15 @@ int disable_advertising() {
 
 void ctrlc_handler(int s) { global_done = 1; }
 
+/*
+ * @fn             ble_beacon
+ *
+ * @brief          BLE Beacon Initialization
+ *
+ * @thread_addr    prt - pointer
+ *
+ * @return         none
+ */
 void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
     if (rc == 0) {
