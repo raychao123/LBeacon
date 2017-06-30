@@ -41,14 +41,14 @@
 // -lbfb -lbluetooth -lobexftp -lopenobex
 
 /*
- * @fn      get_system_time
+ * @fn             get_system_time
  *
- * @brief   Helper function for check_addr_status to give each addr the start of
- *          the push time.
+ * @brief          Helper function for check_addr_status to give each addr the
+ *                 start of the push time.
  *
- * @thread_addr   none
+ * @thread_addr    none
  *
- * @return  System time
+ * @return         System time
  */
 long long get_system_time() {
     struct timeb t;
@@ -57,16 +57,17 @@ long long get_system_time() {
 }
 
 /*
- * @fn      check_addr_status
+ * @fn             check_addr_status
  *
- * @brief   Helper function for start_scanning used to check if the addr is
- *          pushing or not. If addr is not in the push list it will put the addr
- *          in the push list and wait for timeout to be removed from list.
+ * @brief          Helper function for start_scanning used to check if the addr
+ *                 is pushing or not. If addr is not in the push list it will
+ *                 put the addr in the push list and wait for timeout to be
+ *                 removed from the list.
  *
- * @thread_addr   addr - addr scanned by Scan function
+ * @thread_addr    addr - addr scanned by Scan function
  *
- * @return  0: addr in pushing list
- *          1: Unused addr
+ * @return         0: addr in pushing list
+ *                 1: Unused addr
  */
 int check_addr_status(char addr[]) {
     int if_used = 0;
@@ -92,13 +93,13 @@ int check_addr_status(char addr[]) {
 }
 
 /*
- * @fn      send_file
+ * @fn             send_file
  *
- * @brief   Sends the push message to the device.
+ * @brief          Sends the push message to the device.
  *
- * @thread_addr   ptr - scanned bluetooth addr
+ * @thread_addr    ptr - scanned bluetooth addr
  *
- * @return  none
+ * @return         none
  */
 void *send_file(void *ptr) {
     ThreadAddr *thread_addr = (ThreadAddr *)ptr;
@@ -192,15 +193,15 @@ void *send_file(void *ptr) {
 }
 
 /*
- * @fn      send_to_push_dongle
+ * @fn             send_to_push_dongle
  *
- * @brief   Sends the MAC addr of device to send_file function.
+ * @brief          Sends the MAC addr of device to send_file function.
  *
- * @thread_addr   bdaddr - Bluetooth addr
- *                has_rssi - has RSSI value or not
- *                rssi - RSSI value
+ * @thread_addr    bdaddr - Bluetooth addr
+ *                 has_rssi - has RSSI value or not
+ *                 rssi - RSSI value
  *
- * @return  none
+ * @return         none
  */
 static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
     int idle = -1;
@@ -234,15 +235,16 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
 }
 
 /*
- * @fn      print_result
+ * @fn             print_result
  *
- * @brief   Print the RSSI value of the user's addr scanned by the scan function
+ * @brief          Print the RSSI value of the user's addr scanned by the scan
+ * function
  *
- * @thread_addr   bdaddr - Bluetooth addr
- *                has_rssi - has RSSI value or not
- *                rssi - RSSI value
+ * @thread_addr    bdaddr - Bluetooth addr
+ *                 has_rssi - has RSSI value or not
+ *                 rssi - RSSI value
  *
- * @return  none
+ * @return         none
  */
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
     char addr[LEN_OF_MAC_ADDRESS];
@@ -258,13 +260,13 @@ static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
 }
 
 /*
- * @fn      start_scanning
+ * @fn             start_scanning
  *
- * @brief   asynchronous scanning bluetooth device
+ * @brief          asynchronous scanning bluetooth device
  *
- * @thread_addr   none
+ * @thread_addr    none
  *
- * @return  none
+ * @return         none
  */
 static void start_scanning() {
     struct hci_filter flt;
@@ -378,15 +380,17 @@ static void start_scanning() {
 }
 
 /*
- * @fn      timeout_cleaner
+ * @fn              timeout_cleaner
  *
- * @brief   Working asynchronous thread of TIMEOUT cleaner. When Bluetooth was
- *          pushed by push function it addr will store in used list then wait
- *          for timeout to be remove from list.
+ * @brief           Working asynchronous thread of TIMEOUT cleaner. When
+ * Bluetooth was
+ *                  pushed by push function it addr will store in used list then
+ * wait
+ *                  for timeout to be remove from list.
  *
- * @thread_addr   none
+ * @thread_addr    none
  *
- * @return  none
+ * @return          none
  */
 void *timeout_cleaner(void) {
     int i;
@@ -408,13 +412,13 @@ void *timeout_cleaner(void) {
 }
 
 /*
- * @fn      get_config
+ * @fn             get_config
  *
- * @brief   Read the config file and initialize parameters.
+ * @brief          Read the config file and initialize parameters.
  *
- * @thread_addr   filename - ame of config file
+ * @thread_addr    filename - ame of config file
  *
- * @return  Config struct including filepath, coordinates, etc.
+ * @return         Config struct including filepath, coordinates, etc.
  */
 Config get_config(char *filename) {
     Config config;
@@ -466,25 +470,241 @@ Config get_config(char *filename) {
 
     return config;
 }
+// Start-----------------------------BLE---------------------------------------
+/*
+ * @fn             BLE Initialization
+ *
+ * @brief          Initializes the BLE
+ *
+ * @thread_addr    uuid - unique identifier
+ *
+ * @return         data value
+ */
+unsigned int *uuid_str_to_data(char *uuid) {
+    char conv[] = "0123456789ABCDEF";
+    int len = strlen(uuid);
+    unsigned int *data = (unsigned int *)malloc(sizeof(unsigned int) * len);
+    unsigned int *dp = data;
+    char *cu = uuid;
+
+    for (; cu < uuid + len; dp++, cu += 2) {
+        *dp = ((strchr(conv, toupper(*cu)) - conv) * 16) +
+              (strchr(conv, toupper(*(cu + 1))) - conv);
+    }
+
+    return data;
+}
+
+unsigned int twoc(int in, int t) {
+    return (in < 0) ? (in + (2 << (t - 1))) : in;
+}
+
+int enable_advertising(int advertising_interval, char *advertising_uuid,
+                       int rssi_value) {
+    int device_id = hci_get_route(NULL);
+
+    int device_handle = 0;
+    if ((device_handle = hci_open_dev(device_id)) < 0) {
+        perror("Could not open device");
+        exit(1);
+    }
+
+    le_set_advertising_parameters_cp adv_params_cp;
+    memset(&adv_params_cp, 0, sizeof(adv_params_cp));
+    adv_params_cp.min_interval = htobs(advertising_interval);
+    adv_params_cp.max_interval = htobs(advertising_interval);
+    adv_params_cp.chan_map = 7;
+
+    uint8_t status;
+    struct hci_request rq;
+    memset(&rq, 0, sizeof(rq));
+    rq.ogf = OGF_LE_CTL;
+    rq.ocf = OCF_LE_SET_ADVERTISING_PARAMETERS;
+    rq.cparam = &adv_params_cp;
+    rq.clen = LE_SET_ADVERTISING_PARAMETERS_CP_SIZE;
+    rq.rparam = &status;
+    rq.rlen = 1;
+
+    int ret = hci_send_req(device_handle, &rq, 1000);
+    if (ret < 0) {
+        hci_close_dev(device_handle);
+        fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
+        return (1);
+    }
+
+    le_set_advertise_enable_cp advertise_cp;
+    memset(&advertise_cp, 0, sizeof(advertise_cp));
+    advertise_cp.enable = 0x01;
+
+    memset(&rq, 0, sizeof(rq));
+    rq.ogf = OGF_LE_CTL;
+    rq.ocf = OCF_LE_SET_ADVERTISE_ENABLE;
+    rq.cparam = &advertise_cp;
+    rq.clen = LE_SET_ADVERTISE_ENABLE_CP_SIZE;
+    rq.rparam = &status;
+    rq.rlen = 1;
+
+    ret = hci_send_req(device_handle, &rq, 1000);
+
+    if (ret < 0) {
+        hci_close_dev(device_handle);
+        fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
+        return (1);
+    }
+
+    le_set_advertising_data_cp adv_data_cp;
+    memset(&adv_data_cp, 0, sizeof(adv_data_cp));
+
+    uint8_t segment_length = 1;
+    adv_data_cp.data[adv_data_cp.length + segment_length] = htobs(EIR_FLAGS);
+    segment_length++;
+    adv_data_cp.data[adv_data_cp.length + segment_length] = htobs(0x1A);
+    segment_length++;
+    adv_data_cp.data[adv_data_cp.length] = htobs(segment_length - 1);
+
+    adv_data_cp.length += segment_length;
+
+    segment_length = 1;
+    adv_data_cp.data[adv_data_cp.length + segment_length] =
+        htobs(EIR_MANUFACTURE_SPECIFIC);
+    segment_length++;
+    adv_data_cp.data[adv_data_cp.length + segment_length] = htobs(0x4C);
+    segment_length++;
+    adv_data_cp.data[adv_data_cp.length + segment_length] = htobs(0x00);
+    segment_length++;
+    adv_data_cp.data[adv_data_cp.length + segment_length] = htobs(0x02);
+    segment_length++;
+    adv_data_cp.data[adv_data_cp.length + segment_length] = htobs(0x15);
+    segment_length++;
+
+    unsigned int *uuid = uuid_str_to_data(advertising_uuid);
+    int i;
+    for (i = 0; i < strlen(advertising_uuid) / 2; i++) {
+        adv_data_cp.data[adv_data_cp.length + segment_length] = htobs(uuid[i]);
+        segment_length++;
+    }
+
+    // RSSI calibration
+    adv_data_cp.data[adv_data_cp.length + segment_length] =
+        htobs(twoc(rssi_value, 8));
+    segment_length++;
+
+    adv_data_cp.data[adv_data_cp.length] = htobs(segment_length - 1);
+
+    adv_data_cp.length += segment_length;
+
+    memset(&rq, 0, sizeof(rq));
+    rq.ogf = OGF_LE_CTL;
+    rq.ocf = OCF_LE_SET_ADVERTISING_DATA;
+    rq.cparam = &adv_data_cp;
+    rq.clen = LE_SET_ADVERTISING_DATA_CP_SIZE;
+    rq.rparam = &status;
+    rq.rlen = 1;
+
+    ret = hci_send_req(device_handle, &rq, 1000);
+
+    hci_close_dev(device_handle);
+
+    if (ret < 0) {
+        fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
+        return (1);
+    }
+
+    if (status) {
+        fprintf(stderr, "LE set advertise returned status %d\n", status);
+        return (1);
+    }
+}
+/*
+ * @fn             disable advertising
+ *
+ * @brief          disables the advertising capabilities
+ *
+ * @thread_addr    none
+ *
+ * @return         returns 1 if successful
+ */
+int disable_advertising() {
+    int device_id = hci_get_route(NULL);
+
+    int device_handle = 0;
+    if ((device_handle = hci_open_dev(device_id)) < 0) {
+        perror("Could not open device");
+        return (1);
+    }
+
+    le_set_advertise_enable_cp advertise_cp;
+    uint8_t status;
+
+    memset(&advertise_cp, 0, sizeof(advertise_cp));
+
+    struct hci_request rq;
+    memset(&rq, 0, sizeof(rq));
+    rq.ogf = OGF_LE_CTL;
+    rq.ocf = OCF_LE_SET_ADVERTISE_ENABLE;
+    rq.cparam = &advertise_cp;
+    rq.clen = LE_SET_ADVERTISE_ENABLE_CP_SIZE;
+    rq.rparam = &status;
+    rq.rlen = 1;
+
+    int ret = hci_send_req(device_handle, &rq, 1000);
+
+    hci_close_dev(device_handle);
+
+    if (ret < 0) {
+        fprintf(stderr, "Can't set advertise mode: %s (%d)\n", strerror(errno),
+                errno);
+        return (1);
+    }
+
+    if (status) {
+        fprintf(stderr, "LE set advertise enable on returned status %d\n",
+                status);
+        return (1);
+    }
+}
+
+void ctrlc_handler(int s) { global_done = 1; }
+
+/*
+ * @fn             BLE Beacon
+ *
+ * @brief          BLE Beacon Initialization
+ *
+ * @thread_addr    prt - pointer
+ *
+ * @return         none
+ */
+void *BLE_Beacon(void *ptr) {
+    int rc = enable_advertising(300, ptr, 20);
+    if (rc == 0) {
+        struct sigaction sigint_handler;
+
+        sigint_handler.sa_handler = ctrlc_handler;
+        sigemptyset(&sigint_handler.sa_mask);
+        sigint_handler.sa_flags = 0;
+
+        sigaction(SIGINT, &sigint_handler, NULL);
+
+        fprintf(stderr, "Hit ctrl-c to stop advertising\n");
+
+        while (!global_done) {
+            sleep(1);
+        }
+
+        fprintf(stderr, "Shutting down\n");
+        disable_advertising();
+    }
+}
 
 /* Startup function */
 int main(int argc, char **argv) {
     char cmd[100];
-    char ble_buffer[100]; /* HCI command for BLE beacon*/
-    char hex_c[20];
-    pthread_t Device_cleaner_id;
+    char ble_buffer[100]; /* HCI command for BLE beacon */
+    char hex_c[32];
+    pthread_t Device_cleaner_id, BLE_beacon_id;
     int i;
-
-    //*-----Initialize BLE--------
-    // sprintf(cmd, "hciconfig hci0 leadv 3");
-    // system(cmd);
-    // sprintf(cmd, "hciconfig hci0 noscan");
-    // system(cmd);
-    // sprintf(ble_buffer,
-    //         "hcitool -i hci0 cmd 0x08 0x0008 1E 02 01 1A 1A FF 4C 00 02 15 E2
-    //         C5 "
-    //         "6D B5 DF FB 48 D2 B0 60 D0 F5 11 11 11 11 00 00 00 00 C8 00");
-    //*-----Initialize BLE--------
+    // E2 C5 6D B5 DF FB 48 D2 B0 60 D0 F5 11 11 11 11
 
     //*-----Load config--------start
     g_config = get_config(CONFIG_FILENAME);
@@ -492,17 +712,19 @@ int main(int argc, char **argv) {
     memcpy(g_filepath, g_config.filepath, g_config.filepath_len - 1);
     memcpy(g_filepath + g_config.filepath_len - 1, g_config.filename,
            g_config.filename_len - 1);
-    // coordinate_X.f = (float)atof(g_config.coordinate_X);
-    // coordinate_Y.f = (float)atof(g_config.coordinate_Y);
-    // printf("%s\n", hex_c);
-    // memcpy(ble_buffer + 98, hex_c, 11);
-    // printf("%s\n", hex_c);
-    // memcpy(ble_buffer + 110, hex_c, 11);
-    // system(ble_buffer);
+    coordinate_X.f = (float)atof(g_config.coordinate_X);
+    coordinate_Y.f = (float)atof(g_config.coordinate_Y);
+    printf("%f\n", coordinate_X.f);
+
+    sprintf(hex_c, "E2C56DB5DFFB48D2B060D0F5%02x%02x%02x%02x%02x%02x%02x%02x",
+            coordinate_X.b[0], coordinate_X.b[1], coordinate_X.b[2],
+            coordinate_X.b[3], coordinate_Y.b[0], coordinate_Y.b[1],
+            coordinate_Y.b[2], coordinate_Y.b[3]);
     //*-----Load config--------end
 
     /* Device Cleaner */
     pthread_create(&Device_cleaner_id, NULL, (void *)timeout_cleaner, NULL);
+    pthread_create(&BLE_beacon_id, NULL, (void *)BLE_Beacon, hex_c);
 
     for (i = 0; i < MAX_DEVICES; i++) {
         g_device_queue.used[i] = 0;
