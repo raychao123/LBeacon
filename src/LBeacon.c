@@ -246,6 +246,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
  */
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
     char addr[LEN_OF_MAC_ADDRESS];
+    // char *file = choose_file("message1");
     ba2str(bdaddr, addr);
     printf("%17s", addr);
     if (has_rssi) {
@@ -493,11 +494,80 @@ void *timeout_cleaner(void) {
 }
 
 /*
+ * @fn             choose_file
+ *
+ * @brief          receive command and then pick file to send to user
+ *
+ * @thread_addr
+ *
+ * @return         returns the correct message file to send
+ */
+/*char *concatenate(const char *str1, const char *str2) {
+    char *result = malloc(strlen(str1) + strlen(str2) + 1);
+    strcpy(result, str1);
+    strcat(result, str2);
+    return result;
+}*/
+
+char *choose_file(char *messagetosend) {
+    char messages[(int)g_config.num_messages][256];
+    char groups[(int)g_config.num_groups][256];
+    int count = 0;
+    DIR *groupdir;
+    struct dirent *groupent;
+    groupdir = opendir("/home/pi/LBeacon/messages/");
+    if (groupdir) {
+        /* stores all the files and directories within directory */
+        while ((groupent = readdir(groupdir)) != NULL) {
+            // groups[count] = groupent->d_name;
+            snprintf(groups[count], strlen(groupent->d_name), groupent->d_name);
+            count++;
+        }
+        closedir(groupdir);
+    } else {
+        /* could not open directory */
+        perror("Could not open group directory");
+        return NULL;
+    }
+
+    count = 0;
+    char path[80];
+    for (count = 0; count < ((int)g_config.num_messages); count++) {
+        /* combine strings to make file path */
+        sprintf(path, "/home/pi/LBeacon/messages/");
+        strcat(path, groups[count]);
+        DIR *messagedir;
+        struct dirent *messageent;
+        messagedir = opendir(path);
+        if (messagedir) {
+            /* go through and store each file name */
+            while ((messageent = readdir(messagedir)) != NULL) {
+                //  messages[count] = messageent->d_name;
+                snprintf(messages[count], strlen(messageent->d_name),
+                         messageent->d_name);
+                printf("%s\n", messages[count]);
+                if (strcmp(messages[count], messagetosend) == 0) {
+                    // printf("%s\n", messages[count]);
+                    // return message[count];
+                }
+
+                count++;
+            }
+            closedir(messagedir);
+        } else {
+            perror("Could not open message directory");
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
+/*
  * @fn             get_config
  *
  * @brief          Read the config file and initialize parameters.
  *
- * @thread_addr    filename - ame of config file
+ * @thread_addr    filename - name of config file
  *
  * @return         Config struct including filepath, coordinates, etc.
  */
@@ -541,6 +611,14 @@ Config get_config(char *filename) {
                        strlen(config_message));
                 config.rssi_coverage_len = strlen(config_message);
                 /* printf("%s",config.coordinate_X); */
+            } else if (6 == i) {
+                memcpy(config.num_groups, config_message,
+                       strlen(config_message));
+                config.num_groups_len = strlen(config_message);
+            } else if (7 == i) {
+                memcpy(config.num_messages, config_message,
+                       strlen(config_message));
+                config.num_messages_len = strlen(config_message);
             }
             i++;
             /* End while */
@@ -760,7 +838,6 @@ int main(int argc, char **argv) {
     char hex_c[32];
     pthread_t device_cleaner_id, ble_beacon_id;
     int i;
-
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
     g_filepath = malloc(g_config.filepath_len + g_config.filename_len);
