@@ -31,6 +31,10 @@
  * Authors:
  *
  *      Jake Lee, jakelee@iis.sinica.edu.tw
+ *      Shirley Huang, shirley.huang.93@gmail.com
+ *      Han Hu
+ *      Jeffrey Lin
+ *      Howard Hsu
  *
  */
 
@@ -110,7 +114,7 @@
 #define TIMEOUT 20000
 
 //-----------------------------BLE-----------------------------------------
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
 #define EIR_FLAGS 0X01
 #define EIR_NAME_SHORT 0x08
 #define EIR_NAME_COMPLETE 0x09
@@ -231,7 +235,8 @@ static void start_scanning();
 // Remove the user ID from pushed list
 void *timeout_cleaner(void);
 
+// Receives filepath of designated message
+char *choose_file(char *messagetosend);
+
 // Read parameter from config file
 Config get_config(char *filename);
-
-char *choose_file(char *messagetosend);
