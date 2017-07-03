@@ -31,10 +31,11 @@
  * Authors:
  *
  *      Jake Lee, jakelee@iis.sinica.edu.tw
+ *      Johnson Su, johnsonsu@iis.sinica.edu.tw
  *      Shirley Huang, shirley.huang.93@gmail.com
- *      Han Hu
- *      Jeffrey Lin
- *      Howard Hsu
+ *      Han Hu, hhu14@illinois.edu
+ *      Jeffrey Lin, lin.jeff03@gmail.com
+ *      Howard Hsu, haohsu0823@gmail.com
  *
  */
 
@@ -114,7 +115,7 @@
 #define TIMEOUT 20000
 
 //-----------------------------BLE-----------------------------------------
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 #define EIR_FLAGS 0X01
 #define EIR_NAME_SHORT 0x08
 #define EIR_NAME_COMPLETE 0x09
