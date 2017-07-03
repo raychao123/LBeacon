@@ -33,20 +33,25 @@
  * Authors:
  *
  *      Jake Lee, jakelee@iis.sinica.edu.tw
+ *      Johnson Su, johnsonsu@iis.sinica.edu.tw
+ *      Shirley Huang, shirley.huang.93@gmail.com
+ *      Han Hu, hhu14@illinois.edu
+ *      Jeffrey Lin, lin.jeff03@gmail.com
+ *      Howard Hsu, haohsu0823@gmail.com
  *
  */
 
 #include "LBeacon.h"
 
 /*
- * @fn             get_system_time
+ * @fn              get_system_time
  *
- * @brief          Helper function for check_addr_status to give each addr the
- *                 start of the push time.
+ * @brief           Helper function for check_addr_status to give each addr the
+ *                  start of the push time.
  *
- * @thread_addr    none
+ * @thread_addr     none
  *
- * @return         System time
+ * @return          System time
  */
 long long get_system_time() {
     struct timeb t;
@@ -55,17 +60,17 @@ long long get_system_time() {
 }
 
 /*
- * @fn             check_addr_status
+ * @fn              check_addr_status
  *
- * @brief          Helper function for start_scanning used to check if the addr
- *                 is pushing or not. If addr is not in the push list it will
- *                 put the addr in the push list and wait for timeout to be
- *                 removed from the list.
+ * @brief           Helper function for start_scanning used to check if the addr
+ *                  is pushing or not. If addr is not in the push list it will
+ *                  put the addr in the push list and wait for timeout to be
+ *                  removed from the list.
  *
- * @thread_addr    addr - addr scanned by Scan function
+ * @thread_addr     addr - addr scanned by Scan function
  *
- * @return         0: addr in pushing list
- *                 1: Unused addr
+ * @return          0: addr in pushing list
+ *                  1: Unused addr
  */
 int check_addr_status(char addr[]) {
     int if_used = 0;
@@ -91,13 +96,13 @@ int check_addr_status(char addr[]) {
 }
 
 /*
- * @fn             send_file
+ * @fn              send_file
  *
- * @brief          Sends the push message to the device.
+ * @brief           Sends the push message to the device.
  *
- * @thread_addr    ptr - scanned bluetooth addr
+ * @thread_addr     ptr - scanned bluetooth addr
  *
- * @return         none
+ * @return          none
  */
 void *send_file(void *ptr) {
     ThreadAddr *thread_addr = (ThreadAddr *)ptr;
@@ -191,15 +196,15 @@ void *send_file(void *ptr) {
 }
 
 /*
- * @fn             send_to_push_dongle
+ * @fn              send_to_push_dongle
  *
- * @brief          Sends the MAC addr of device to send_file function.
+ * @brief           Sends the MAC addr of device to send_file function.
  *
- * @thread_addr    bdaddr - Bluetooth addr
- *                 has_rssi - has RSSI value or not
- *                 rssi - RSSI value
+ * @thread_addr     bdaddr - Bluetooth addr
+ *                  has_rssi - has RSSI value or not
+ *                  rssi - RSSI value
  *
- * @return         none
+ * @return          none
  */
 static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
     int idle = -1;
@@ -236,7 +241,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
  * @fn             print_result
  *
  * @brief          Print the RSSI value of the user's addr scanned by the scan
- * function
+ *                 function.
  *
  * @thread_addr    bdaddr - Bluetooth addr
  *                 has_rssi - has RSSI value or not
@@ -245,8 +250,9 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
  * @return         none
  */
 static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
+    char *ret = choose_file("message1");
+    // printf("%s\n", ret);
     char addr[LEN_OF_MAC_ADDRESS];
-    // char *file = choose_file("message1");
     ba2str(bdaddr, addr);
     printf("%17s", addr);
     if (has_rssi) {
@@ -261,7 +267,7 @@ static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
 /*
  * @fn              track_devices
  *
- * @brief           track the scanned MAC addresses under the LBeacon at a time
+ * @brief           Track the scanned MAC addresses under the LBeacon at a time.
  *
  * @thread_addr     none
  *
@@ -339,13 +345,13 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
 }
 
 /*
- * @fn             start_scanning
+ * @fn              start_scanning
  *
- * @brief          asynchronous scanning bluetooth device
+ * @brief           Asynchronous scanning bluetooth device.
  *
- * @thread_addr    none
+ * @thread_addr     none
  *
- * @return         none
+ * @return          none
  */
 static void start_scanning() {
     struct hci_filter flt;
@@ -364,7 +370,7 @@ static void start_scanning() {
     struct pollfd p;
 
     dev_id = SCAN_DONGLE;
-    printf("%d", dev_id);
+    // printf("%d", dev_id);
 
     /* Open Bluetooth device */
     socket = hci_open_dev(dev_id);
@@ -464,13 +470,10 @@ static void start_scanning() {
  * @fn              timeout_cleaner
  *
  * @brief           Working asynchronous thread of TIMEOUT cleaner. When
- * Bluetooth was
- *                  pushed by push function it addr will store in used list
- * then
- * wait
- *                  for timeout to be remove from list.
+ *                  Bluetooth was pushed by push function it addr will store in
+ *                  used list then wait for timeout to be remove from list.
  *
- * @thread_addr    none
+ * @thread_addr     none
  *
  * @return          none
  */
@@ -494,82 +497,90 @@ void *timeout_cleaner(void) {
 }
 
 /*
- * @fn             choose_file
+ * @fn              choose_file
  *
- * @brief          receive command and then pick file to send to user
+ * @brief           Receive message and then sends user the filepath where
+ *                  message is located.
  *
- * @thread_addr
+ * @thread_addr     none
  *
- * @return         returns the correct message file to send
+ * @return          filepath of designated message
  */
-/*char *concatenate(const char *str1, const char *str2) {
-    char *result = malloc(strlen(str1) + strlen(str2) + 1);
-    strcpy(result, str1);
-    strcat(result, str2);
-    return result;
-}*/
-
 char *choose_file(char *messagetosend) {
-    char messages[(int)g_config.num_messages][256];
-    char groups[(int)g_config.num_groups][256];
+    // printf("%s\n", "choose_file entered");
+    int num_messages = atoi(g_config.num_messages);
+    int num_groups = atoi(g_config.num_groups);
+    char messages[num_messages][256];
+    char groups[num_groups][256];
     int count = 0;
+    int i = 0;
     DIR *groupdir;
     struct dirent *groupent;
     groupdir = opendir("/home/pi/LBeacon/messages/");
     if (groupdir) {
         /* stores all the files and directories within directory */
         while ((groupent = readdir(groupdir)) != NULL) {
-            // groups[count] = groupent->d_name;
-            snprintf(groups[count], strlen(groupent->d_name), groupent->d_name);
-            count++;
+            if (strcmp(groupent->d_name, ".") != 0 &&
+                strcmp(groupent->d_name, "..") != 0) {
+                strcpy(groups[count], groupent->d_name);
+                // printf("%d, %s\n", count, groups[count]);
+                count++;
+            }
         }
         closedir(groupdir);
     } else {
         /* could not open directory */
-        perror("Could not open group directory");
+        perror("Directories do not exist");
         return NULL;
     }
-
+    char path[256];
+    char *ret;
+    memset(path, 0, 256);
     count = 0;
-    char path[80];
-    for (count = 0; count < ((int)g_config.num_messages); count++) {
+    for (i = 0; i < num_groups; i++) {
         /* combine strings to make file path */
         sprintf(path, "/home/pi/LBeacon/messages/");
-        strcat(path, groups[count]);
+        strcat(path, groups[i]);
+        // printf("%s\n", path);
         DIR *messagedir;
         struct dirent *messageent;
         messagedir = opendir(path);
         if (messagedir) {
-            /* go through and store each file name */
+            /* go through each message in directory and store each file name */
             while ((messageent = readdir(messagedir)) != NULL) {
-                //  messages[count] = messageent->d_name;
-                snprintf(messages[count], strlen(messageent->d_name),
-                         messageent->d_name);
-                printf("%s\n", messages[count]);
-                if (strcmp(messages[count], messagetosend) == 0) {
-                    // printf("%s\n", messages[count]);
-                    // return message[count];
+                if (strcmp(messageent->d_name, ".") != 0 &&
+                    strcmp(messageent->d_name, "..") != 0) {
+                    strcpy(messages[count], messageent->d_name);
+                    // printf("%d, %s\n", count, messages[count]);
+                    if (strcmp(messages[count], messagetosend) == 0) {
+                        strcat(path, "/");
+                        strcat(path, messages[count]);
+                        // printf("%s\n", path);
+                        ret = &path[0];
+                        return ret;
+                    }
+                    count++;
                 }
-
-                count++;
             }
             closedir(messagedir);
         } else {
-            perror("Could not open message directory");
+            /* could not open messages */
+            perror("Message files do not exist");
             return NULL;
         }
     }
+    perror("Message files do not exist");
     return NULL;
 }
 
 /*
- * @fn             get_config
+ * @fn              get_config
  *
- * @brief          Read the config file and initialize parameters.
+ * @brief           Read the config file and initialize parameters.
  *
- * @thread_addr    filename - name of config file
+ * @thread_addr     filename - name of config file
  *
- * @return         Config struct including filepath, coordinates, etc.
+ * @return          Config struct including filepath, coordinates, etc.
  */
 Config get_config(char *filename) {
     Config config;
@@ -632,13 +643,13 @@ Config get_config(char *filename) {
 
 /* Start BLE */
 /*
- * @fn             uuid_str_to_data
+ * @fn              uuid_str_to_data
  *
- * @brief          converts the uuid to a data value
+ * @brief           Converts the uuid to a data value.
  *
- * @thread_addr    uuid - unique identifier
+ * @thread_addr     uuid - unique identifier
  *
- * @return         data value
+ * @return          data value
  */
 unsigned int *uuid_str_to_data(char *uuid) {
     char conv[] = "0123456789ABCDEF";
@@ -659,14 +670,14 @@ unsigned int twoc(int in, int t) {
     return (in < 0) ? (in + (2 << (t - 1))) : in;
 }
 /*
- * @fn             enable_advertising
+ * @fn              enable_advertising
  *
- * @brief          determines the advertising capabilities and enables
- * advertising
+ * @brief           Determines the advertising capabilities and enables
+ *                  advertising.
  *
- * @thread_addr    none
+ * @thread_addr     none
  *
- * @return         data value
+ * @return          data value
  */
 int enable_advertising(int advertising_interval, char *advertising_uuid,
                        int rssi_value) {
@@ -786,13 +797,14 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 }
 
 /*
- * @fn             disable_advertising
+ * @fn              disable_advertising
  *
- * @brief          determines advertising capabilities and disables advertising
+ * @brief           Determines advertising capabilities and disables
+ *                  advertising.
  *
- * @thread_addr    none
+ * @thread_addr     none
  *
- * @return         returns if successful
+ * @return          returns if successful
  */
 int disable_advertising() {
     int device_id = hci_get_route(NULL);
@@ -837,13 +849,13 @@ int disable_advertising() {
 void ctrlc_handler(int s) { global_done = 1; }
 
 /*
- * @fn             ble_beacon
+ * @fn              ble_beacon
  *
- * @brief          BLE Beacon Initialization
+ * @brief           BLE beacon initialization
  *
- * @thread_addr    ptr - pointer
+ * @thread_addr     ptr - pointer
  *
- * @return         none
+ * @return          none
  */
 void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
@@ -882,7 +894,7 @@ int main(int argc, char **argv) {
            g_config.filename_len - 1);
     coordinate_X.f = (float)atof(g_config.coordinate_X);
     coordinate_Y.f = (float)atof(g_config.coordinate_Y);
-    printf("%f\n", coordinate_X.f);
+    // printf("%f\n", coordinate_X.f);
 
     sprintf(hex_c, "E2C56DB5DFFB48D2B060D0F5%02x%02x%02x%02x%02x%02x%02x%02x",
             coordinate_X.b[0], coordinate_X.b[1], coordinate_X.b[2],

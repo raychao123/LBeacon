@@ -31,6 +31,11 @@
  * Authors:
  *
  *      Jake Lee, jakelee@iis.sinica.edu.tw
+ *      Johnson Su, johnsonsu@iis.sinica.edu.tw
+ *      Shirley Huang, shirley.huang.93@gmail.com
+ *      Han Hu, hhu14@illinois.edu
+ *      Jeffrey Lin, lin.jeff03@gmail.com
+ *      Howard Hsu, haohsu0823@gmail.com
  *
  */
 
@@ -42,7 +47,7 @@
 #include "bluetooth/hci.h"
 #include "bluetooth/hci_lib.h"
 #include "ctype.h"
-#include "dirent.h"  //used for choose_file
+#include "dirent.h"
 #include "errno.h"
 #include "limits.h"
 #include "netdb.h"
@@ -231,7 +236,8 @@ static void start_scanning();
 // Remove the user ID from pushed list
 void *timeout_cleaner(void);
 
+// Receives filepath of designated message
+char *choose_file(char *messagetosend);
+
 // Read parameter from config file
 Config get_config(char *filename);
-
-char *choose_file(char *messagetosend);
