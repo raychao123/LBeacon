@@ -581,11 +581,12 @@ char *choose_file(char *messagetosend) {
             }
             closedir(messagedir);
         } else {
-	    /* handle error */
+	          /* handle error */
             perror("Message files do not exist");
             return NULL;
         }
     }
+    perror("Message files do not exist");
     return NULL;
 }
 
