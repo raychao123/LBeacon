@@ -10,10 +10,11 @@
  *
  *      BeDIPS
  *
- * File Description: This file will detect a phone and then scan it for its
- *                   Bluetooth address. Depending on the RSSI value, it will
- *                   determine if it should location related files to the user.
- *                   The detection is based on BLE or OBEX.
+ * File Description:
+ *
+ *     This file will detect a phone and then scan for its Bluetooth address.
+ * Depending on the RSSI value, it will determine if it should send location
+ * related files to the user. The detection is based on BLE or OBEX.
  *
  * File Name:
  *
@@ -22,13 +23,13 @@
  * Abstract:
  *
  *      BeDIPS uses LBeacons to deliver users' 3D coordinates and textual
- *      descriptions of their locations to their devices. Basically, LBeacon is
- *      an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
- *      location descriptions of every LBeacon are retrieved from BeDIS
+ *      descriptions of their locations to user devices. Basically, a LBeacon
+ *      is an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
+ *      location description of every LBeacon are retrieved from BeDIS
  *      (Building/environment Data and Information System) and stored locally
  *      during deployment and maintenance times. Once initialized, each LBeacon
  *      broadcasts its coordinates and location description to Bluetooth
- *      enabled devices within its coverage area.
+ *      enabled user devices within its coverage area.
  *
  * Authors:
  *
@@ -44,14 +45,18 @@
 #include "LBeacon.h"
 
 /*
- * @fn              get_system_time
+ *  get_system_time:
  *
- * @brief           Helper function for is_unused_addr to give each addr the
- *                  start of the push time.
+ *  Helper function called by check_addr_status to give each addr the start
+ *  of the push time.
  *
- * @thread_addr     none
+ *  Parameters:
  *
- * @return          System time
+ *  None
+ *
+ *  Return value:
+ *
+ *  System time
  */
 long long get_system_time() {
     struct timeb t;
@@ -60,17 +65,21 @@ long long get_system_time() {
 }
 
 /*
- * @fn              is_unused_addr
+ *  check_addr_status:
  *
- * @brief           Helper function for start_scanning used to check if the addr
- *                  is pushing or not. If addr is not in the push list it will
- *                  put the addr in the push list and wait for timeout to be
- *                  removed from the list.
+ *  Helper function called by send_file to check whether the addr given as input
+ *  is in the push list. If the addr is not in the push list, the function puts
+ *  the addr in the push list and waits for timeout to remove the addr from the
+ *  list.
  *
- * @thread_addr     addr - addr scanned by Scan function
+ *  Parameters:
  *
- * @return          false - addr in pushing list
- *                  true - unused addr
+ *  char addr[] - @todo
+ *
+ *  Return value:
+ *
+ *  false - addr in pushing list
+ *  true - unused addr
  */
 bool is_unused_addr(char addr[]) {
     int i;
@@ -94,13 +103,17 @@ bool is_unused_addr(char addr[]) {
 }
 
 /*
- * @fn              send_file
+ *  send_file:
  *
- * @brief           Sends the push message to the device.
+ *  Sends the push message to the device. @todo(which device?)
  *
- * @thread_addr     ptr - scanned bluetooth addr
+ *  Parameters:
  *
- * @return          none
+ *  void *ptr - The scanned bluetooth addr @todo
+ *
+ *  Return value:
+ *
+ *  None
  */
 void *send_file(void *ptr) {
     ThreadAddr *thread_addr = (ThreadAddr *)ptr;
@@ -198,15 +211,19 @@ void *send_file(void *ptr) {
 }
 
 /*
- * @fn              send_to_push_dongle
+ *  send_to_push_dongle:
  *
- * @brief           Sends the MAC addr of device to send_file function.
+ *  Sends the MAC addr of user device to send_file function. @todo
  *
- * @thread_addr     bdaddr - Bluetooth addr
- *                  has_rssi - has RSSI value or not
- *                  rssi - RSSI value
+ *  Parameters:
  *
- * @return          none
+ *  bdaddr_t *bdaddr - Bluetooth addr
+ *
+ *  int rssi - RSSI value
+ *
+ *  Return value:
+ *
+ *  None
  */
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
     int idle = -1;
@@ -242,16 +259,21 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
 }
 
 /*
- * @fn             print_RSSI_value
+ *  print_result:
  *
- * @brief          Print the RSSI value of the user's addr scanned by the scan
- *                 function.
+ *  Print the RSSI value of the user's addr scanned by the scan function.
  *
- * @thread_addr    bdaddr - Bluetooth addr
- *                 has_rssi - has RSSI value or not
- *                 rssi - RSSI value
+ *  Parameters:
  *
- * @return         none
+ *  bdaddr_t *bdaddr - Bluetooth addr
+ *
+ *  char has_rssi - has RSSI value or not
+ *
+ *  int rssi - RSSI value
+ *
+ *  Return value:
+ *
+ *  None
  */
 static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
     char *ret = choose_file("message1");
@@ -269,13 +291,19 @@ static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
 }
 
 /*
- * @fn              track_devices
+ *  track_devices:
  *
- * @brief           Track the scanned MAC addresses under the LBeacon at a time.
+ *  Track the scanned MAC addresses under the LBeacon at a time.
  *
- * @thread_addr     none
+ *  Parameters:
  *
- * @return          none
+ *  bdaddr_t *bdaddr - Bluetooth addr
+ *
+ *  char *filename - @todo
+ *
+ *  Return value:
+ *
+ *  None
  */
 static void track_devices(bdaddr_t *bdaddr, char *filename) {
     /* Initialize variables */
@@ -283,7 +311,8 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
     int j = 0;
     int k = 0;
 
-    /* Get current timestamp when tracking Bluetooth devices. If file is empty,
+    /* Get current timestamp when tracking Bluetooth devices. If
+     * file is empty,
      * create new file with LBeacon ID. */
     unsigned timestamp = (unsigned)time(NULL);
     char temp[10]; /* converting long long to char[] */
@@ -303,9 +332,12 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         memset(&g_addr[0], 0, sizeof(g_addr));
     }
 
-    /* If timestamp already exists add MAC address to end of previous line, else
-     * create new line. Format timestamp and MAC addresses into a char[] and
-     * append new line to end of file; ":" to separate timestamp with MAC
+    /* If timestamp already exists add MAC address to end of
+     * previous line, else
+     * create new line. Format timestamp and MAC addresses into a
+     * char[] and
+     * append new line to end of file; ":" to separate timestamp
+     * with MAC
      * address and "," to separate different MAC addresses */
     ba2str(bdaddr, g_addr);
     if (timestamp != g_most_recent_timestamp_of_file) {
@@ -355,13 +387,17 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
 }
 
 /*
- * @fn              start_scanning
+ *  start_scanning:
  *
- * @brief           Asynchronous scanning bluetooth device.
+ *  Asynchronous scanning bluetooth device. @todo
  *
- * @thread_addr     none
+ *  Parameters:
  *
- * @return          none
+ *  None
+ *
+ *  Return value:
+ *
+ *  None
  */
 static void start_scanning() {
     struct hci_filter flt;
@@ -482,15 +518,19 @@ static void start_scanning() {
 }
 
 /*
- * @fn              timeout_cleaner
+ *  timeout_cleaner:
  *
- * @brief           Working asynchronous thread of TIMEOUT cleaner. When
- *                  Bluetooth was pushed by push function it addr will store in
- *                  used list then wait for timeout to be remove from list.
+ *  Working asynchronous thread of TIMEOUT cleaner. When
+ *  Bluetooth was pushed by push function it addr will store in
+ *  used list then wait for timeout to be remove from list.
  *
- * @thread_addr     none
+ *  Parameters:
  *
- * @return          none
+ *  None
+ *
+ *  Return value:
+ *
+ *  None
  */
 void *timeout_cleaner(void) {
     int i;
@@ -514,14 +554,20 @@ void *timeout_cleaner(void) {
 }
 
 /*
- * @fn              choose_file
+ *  choose_file:
  *
- * @brief           Receive message and then sends user the filepath where
- *                  message is located.
+ *  Receive message and then sends user the filepath where
+ *  message is located.
  *
- * @thread_addr     none
+ *  Parameters:
  *
- * @return          filepath of designated message
+ *  char *messagetosend - The name of the message file we want to
+ * retreive the
+ *  file path for.
+ *
+ *  Return value:
+ *
+ *  ret - message filepath
  */
 char *choose_file(char *messagetosend) {
     // printf("%s\n", "choose_file entered");
@@ -563,7 +609,8 @@ char *choose_file(char *messagetosend) {
         struct dirent *messageent;
         messagedir = opendir(path);
         if (messagedir) {
-            /* go through each message in directory and store each file name */
+            /* go through each message in directory and store each
+             * file name */
             while ((messageent = readdir(messagedir)) != NULL) {
                 if (strcmp(messageent->d_name, ".") != 0 &&
                     strcmp(messageent->d_name, "..") != 0) {
@@ -591,13 +638,17 @@ char *choose_file(char *messagetosend) {
 }
 
 /*
- * @fn              get_config
+ *  get_config
  *
- * @brief           Read the config file and initialize parameters.
+ *  Read the config file and initialize parameters.
  *
- * @thread_addr     filename - name of config file
+ *  Parameters:
  *
- * @return          Config struct including filepath, coordinates, etc.
+ *  char *filename - @todo
+ *
+ *  Return value:
+ *
+ *  config - Config struct including filepath, coordinates, etc.
  */
 Config get_config(char *filename) {
     Config config;
@@ -662,13 +713,17 @@ Config get_config(char *filename) {
 
 /* Start BLE */
 /*
- * @fn              uuid_str_to_data
+ *  uuid_str_to_data:
  *
- * @brief           Converts the uuid to a data value.
+ *  Converts the uuid to a data value.
  *
- * @thread_addr     uuid - unique identifier
+ *  Parameters:
  *
- * @return          data value
+ *  char *uuid - unique identifier @todo
+ *
+ *  Return value:
+ *
+ *  data - @todo
  */
 unsigned int *uuid_str_to_data(char *uuid) {
     char conv[] = "0123456789ABCDEF";
@@ -695,14 +750,22 @@ unsigned int twoc(int in, int t) {
     return (in < 0) ? (in + (2 << (t - 1))) : in;
 }
 /*
- * @fn              enable_advertising
+ *  enable_advertising:
  *
- * @brief           Determines the advertising capabilities and enables
- *                  advertising.
+ *  Determines the advertising capabilities and enables
+ *  advertising.
  *
- * @thread_addr     none
+ *  Parameters:
  *
- * @return          data value
+ *  int advertising_interval - @todo
+ *
+ *  char *advertising_uuid - @todo
+ *
+ *  int rssi_value - @todo
+ *
+ *  Return value:
+ *
+ *  data - @todo
  */
 int enable_advertising(int advertising_interval, char *advertising_uuid,
                        int rssi_value) {
@@ -826,14 +889,18 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 }
 
 /*
- * @fn              disable_advertising
+ *  disable_advertising:
  *
- * @brief           Determines advertising capabilities and disables
- *                  advertising.
+ *  Determines the advertising capabilities and disables
+ *  advertising.
  *
- * @thread_addr     none
+ *  Parameters:
  *
- * @return          returns if successful
+ *  None
+ *
+ *  Return value:
+ *
+ *  @todo returns if successful
  */
 int disable_advertising() {
     int device_id = hci_get_route(NULL);
@@ -880,13 +947,17 @@ int disable_advertising() {
 void ctrlc_handler(int s) { global_done = 1; }
 
 /*
- * @fn              ble_beacon
+ *  ble_beacon:
  *
- * @brief           BLE beacon initialization
+ *  BLE beacon initialization
  *
- * @thread_addr     ptr - pointer
+ *  Parameters:
  *
- * @return          none
+ *  ptr - pointer
+ *
+ *  Return value:
+ *
+ *  None
  */
 void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
