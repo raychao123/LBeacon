@@ -446,7 +446,8 @@ static void start_scanning() {
                         print_RSSI_value(&info_rssi->bdaddr, 1,
                                          info_rssi->rssi);
                         if (info_rssi->rssi > RSSI_RANGE) {
-                            send_to_push_dongle(&info_rssi->bdaddr, info_rssi->rssi);
+                            send_to_push_dongle(&info_rssi->bdaddr,
+                                                info_rssi->rssi);
                         }
                     }
                 } break;
