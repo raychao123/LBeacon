@@ -195,7 +195,7 @@ Config g_config;
 typedef struct DeviceQueue {
     long long first_appearance_time[MAX_DEVICES];
     char discovered_device_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS];
-    char used_device[MAX_DEVICES];
+    bool is_used_device[MAX_DEVICES];
 } DeviceQueue;
 
 // Struct for storing information on users' devices discovered by each becon
@@ -218,7 +218,7 @@ ThreadAddr g_thread_addr[MAX_DEVICES];
 long long get_system_time();
 
 // Check whether the user can be pushed again
-int check_addr_status(char addr[]);
+bool is_unused_addr(char addr[]);
 
 // Gets the MAC addr of the device and sends the push message to the user device
 void *send_file(void *ptr);

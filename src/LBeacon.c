@@ -46,7 +46,7 @@
 /*
  * @fn              get_system_time
  *
- * @brief           Helper function for check_addr_status to give each addr the
+ * @brief           Helper function for is_unused_addr to give each addr the
  *                  start of the push time.
  *
  * @thread_addr     none
@@ -60,7 +60,7 @@ long long get_system_time() {
 }
 
 /*
- * @fn              check_addr_status
+ * @fn              is_unused_addr
  *
  * @brief           Helper function for start_scanning used to check if the addr
  *                  is pushing or not. If addr is not in the push list it will
@@ -69,30 +69,28 @@ long long get_system_time() {
  *
  * @thread_addr     addr - addr scanned by Scan function
  *
- * @return          0: addr in pushing list
- *                  1: Unused addr
+ * @return          false - addr in pushing list
+ *                  true - unused addr
  */
-int check_addr_status(char addr[]) {
-    int if_used = 0;
+bool is_unused_addr(char addr[]) {
     int i;
     int j;
     for (i = 0; i < MAX_DEVICES; i++) {
         if (0 == strcmp(addr, g_device_queue.discovered_device_addr[i])) {
-            if_used = 1;
-            return if_used;
+            return true;
         }
     }
     for (i = 0; i < MAX_DEVICES; i++) {
-        if (0 == g_device_queue.used_device[i]) {
+        if (false == g_device_queue.is_used_device[i]) {
             for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
                 g_device_queue.discovered_device_addr[i][j] = addr[j];
             }
-            g_device_queue.used_device[i] = 1;
+            g_device_queue.is_used_device[i] = true;
             g_device_queue.first_appearance_time[i] = get_system_time();
-            return if_used;
+            return false;
         }
     }
-    return if_used;
+    return false;
 }
 
 /*
@@ -223,7 +221,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
             }
         }
     }
-    if (-1 != idle && 0 == check_addr_status(addr)) {
+    if (-1 != idle && false == is_unused_addr(addr)) {
         ThreadAddr *thread_addr = &g_thread_addr[idle];
         g_idle_handler[idle] = 1;
         printf("%zu\n", sizeof(addr) / sizeof(addr[0]));
@@ -484,7 +482,7 @@ void *timeout_cleaner(void) {
         for (i = 0; i < MAX_DEVICES; i++) {
             if (get_system_time() - g_device_queue.first_appearance_time[i] >
                     TIMEOUT &&
-                1 == g_device_queue.used_device[i]) {
+                true == g_device_queue.is_used_device[i]) {
                 printf("Cleaner time: %lld ms\n",
                        get_system_time() -
                            g_device_queue.first_appearance_time[i]);
@@ -492,7 +490,7 @@ void *timeout_cleaner(void) {
                     g_device_queue.discovered_device_addr[i][j] = 0;
                 }
                 g_device_queue.first_appearance_time[i] = 0;
-                g_device_queue.used_device[i] = 0;
+                g_device_queue.is_used_device[i] = false;
             }
         }
     }
@@ -908,7 +906,7 @@ int main(int argc, char **argv) {
     pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c);
 
     for (i = 0; i < MAX_DEVICES; i++) {
-        g_device_queue.used_device[i] = 0;
+        g_device_queue.is_used_device[i] = false;
     }
     while (1) {
         start_scanning();
