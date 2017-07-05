@@ -2,6 +2,7 @@
  * Copyright (c) 2016 Academia Sinica, Institute of Information Science
  *
  * License:
+ *
  *      GPL 3.0 : The content of this file is subject to the terms and
  *      conditions defined in file 'COPYING.txt', which is part of this source
  *      code package.
@@ -10,8 +11,10 @@
  *
  *      BeDIPS
  *
- * File Description: This is the header file containing the function
- *                   declarations and variables used in the LBeacon.c file.
+ * File Description:
+ *
+ *      This is the header file containing the function declarations and
+ *      variables used in the LBeacon.c file.
  *
  * File Name:
  *

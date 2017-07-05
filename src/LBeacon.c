@@ -2,6 +2,7 @@
  * Copyright (c) 2016 Academia Sinica, Institute of Information Science
  *
  * License:
+ *
  *      GPL 3.0 : The content of this file is subject to the terms and
  *      conditions defined in file 'COPYING.txt', which is part of this source
  *      code package.
@@ -12,9 +13,10 @@
  *
  * File Description:
  *
- *     This file will detect a phone and then scan for its Bluetooth address.
- * Depending on the RSSI value, it will determine if it should send location
- * related files to the user. The detection is based on BLE or OBEX.
+ *      This file will detect a phone and then scan for its Bluetooth address.
+ *      Depending on the RSSI value, it will determine if it should send
+ *      location related files to the user. The detection is based on BLE or
+ *      OBEX.
  *
  * File Name:
  *
@@ -266,9 +268,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
  *  Parameters:
  *
  *  bdaddr_t *bdaddr - Bluetooth addr
- *
  *  char has_rssi - has RSSI value or not
- *
  *  int rssi - RSSI value
  *
  *  Return value:
@@ -298,7 +298,6 @@ static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
  *  Parameters:
  *
  *  bdaddr_t *bdaddr - Bluetooth addr
- *
  *  char *filename - @todo
  *
  *  Return value:
@@ -311,8 +310,7 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
     int j = 0;
     int k = 0;
 
-    /* Get current timestamp when tracking Bluetooth devices. If
-     * file is empty,
+    /* Get current timestamp when tracking Bluetooth devices. If file is empty,
      * create new file with LBeacon ID. */
     unsigned timestamp = (unsigned)time(NULL);
     char temp[10]; /* converting long long to char[] */
@@ -332,12 +330,9 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         memset(&g_addr[0], 0, sizeof(g_addr));
     }
 
-    /* If timestamp already exists add MAC address to end of
-     * previous line, else
-     * create new line. Format timestamp and MAC addresses into a
-     * char[] and
-     * append new line to end of file; ":" to separate timestamp
-     * with MAC
+    /* If timestamp already exists add MAC address to end of previous line, else
+     * create new line. Format timestamp and MAC addresses into a char[] and
+     * append new line to end of file; ":" to separate timestamp with MAC
      * address and "," to separate different MAC addresses */
     ba2str(bdaddr, g_addr);
     if (timestamp != g_most_recent_timestamp_of_file) {
@@ -520,9 +515,9 @@ static void start_scanning() {
 /*
  *  timeout_cleaner:
  *
- *  Working asynchronous thread of TIMEOUT cleaner. When
- *  Bluetooth was pushed by push function it addr will store in
- *  used list then wait for timeout to be remove from list.
+ *  Working asynchronous thread of TIMEOUT cleaner. When Bluetooth was pushed by
+ *  push function it addr will store in used list then wait for timeout to be
+ *  remove from list.
  *
  *  Parameters:
  *
@@ -556,14 +551,11 @@ void *timeout_cleaner(void) {
 /*
  *  choose_file:
  *
- *  Receive message and then sends user the filepath where
- *  message is located.
+ *  Receive message and then sends user the filepath where message is located.
  *
  *  Parameters:
  *
- *  char *messagetosend - The name of the message file we want to
- * retreive the
- *  file path for.
+ *  char *messagetosend - The name of the message file we want to retreive.
  *
  *  Return value:
  *
@@ -711,7 +703,6 @@ Config get_config(char *filename) {
     return config;
 }
 
-/* Start BLE */
 /*
  *  uuid_str_to_data:
  *
@@ -749,18 +740,16 @@ unsigned int *uuid_str_to_data(char *uuid) {
 unsigned int twoc(int in, int t) {
     return (in < 0) ? (in + (2 << (t - 1))) : in;
 }
+
 /*
  *  enable_advertising:
  *
- *  Determines the advertising capabilities and enables
- *  advertising.
+ *  Determines the advertising capabilities and enables advertising.
  *
  *  Parameters:
  *
  *  int advertising_interval - @todo
- *
  *  char *advertising_uuid - @todo
- *
  *  int rssi_value - @todo
  *
  *  Return value:
@@ -891,8 +880,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 /*
  *  disable_advertising:
  *
- *  Determines the advertising capabilities and disables
- *  advertising.
+ *  Determines the advertising capabilities and disables advertising.
  *
  *  Parameters:
  *
