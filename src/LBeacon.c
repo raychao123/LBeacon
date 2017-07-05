@@ -1,5 +1,5 @@
 /*
- t * Copyright (c) 2016 Academia Sinica, Institute of Information Science
+ * Copyright (c) 2016 Academia Sinica, Institute of Information Science
  *
  * License:
  *      GPL 3.0 : The content of this file is subject to the terms and
@@ -122,7 +122,7 @@ void *send_file(void *ptr) {
     socket = hci_open_dev(dev_id);
     if (0 > dev_id || 0 > socket) {
         /* handle error */
-	perror("opening socket");
+        perror("opening socket");
         pthread_exit(NULL);
     }
     printf("Thread number %d\n", thread_addr->thread_id);
@@ -146,13 +146,12 @@ void *send_file(void *ptr) {
 
     printf("time: %lld ms\n", end - start);
     if (cli == NULL) {
-	/* handle error */
+        /* handle error */
         fprintf(stderr, "Error opening obexftp client\n");
         g_idle_handler[thread_addr->thread_id] = 0;
         for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
             g_pushed_user_addr[thread_addr->thread_id][i] = 0;
         }
-
         close(socket);
         pthread_exit(NULL);
     }
@@ -161,7 +160,7 @@ void *send_file(void *ptr) {
     ret = obexftp_connect_push(cli, addr, channel);
 
     if (0 > ret) {
-	/* handle error */
+        /* handle error */
         fprintf(stderr, "Error connecting to obexftp device\n");
         obexftp_close(cli);
         cli = NULL;
@@ -176,14 +175,14 @@ void *send_file(void *ptr) {
     /* Push file */
     ret = obexftp_put_file(cli, g_filepath, filename);
     if (0 > ret) {
-	/* handle error */
+        /* handle error */
         fprintf(stderr, "Error putting file\n");
     }
 
     /* Disconnect */
     ret = obexftp_disconnect(cli);
     if (0 > ret) {
-	/* handle error */
+        /* handle error */
         fprintf(stderr, "Error disconnecting the client\n");
     }
 
@@ -235,10 +234,10 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
             thread_addr->addr[i] = addr[i];
         }
         thread_addr->thread_id = idle;
-        if(pthread_create(&g_thread_addr[idle].thread, NULL, send_file,
-                       &g_thread_addr[idle])){
-	    fprintf(stderr, "g_thread_addr pthread_create error\n");
-	}
+        if (pthread_create(&g_thread_addr[idle].thread, NULL, send_file,
+                           &g_thread_addr[idle])) {
+            fprintf(stderr, "g_thread_addr pthread_create error\n");
+        }
     }
 }
 
@@ -293,9 +292,9 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         /* Overwrites the file and clears the content */
         FILE *fd = fopen(filename, "w+");
         if (fd == NULL) {
-	    /* handle error */
+            /* handle error */
             perror("Error opening file.");
-	    return;
+            return;
         }
         fputs("LBeacon ID: ########", fd);
         fclose(fd);
@@ -314,9 +313,9 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         char buffer[1024];
         output = fopen(filename, "a+");
         if (output == NULL) {
-	    /* handle error */
+            /* handle error */
             perror("Error opening file.");
-	    return;
+            return;
         }
         while (fgets(buffer, sizeof(buffer), output) != NULL) {
         }
@@ -333,9 +332,9 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         char buffer[1024];
         output = fopen(filename, "a+");
         if (output == NULL) {
-	    /* handle error */
+            /* handle error */
             perror("Error opening file.");
-	    return;
+            return;
         }
         while (fgets(buffer, sizeof(buffer), output) != NULL) {
         }
@@ -386,7 +385,7 @@ static void start_scanning() {
     /* Open Bluetooth device */
     socket = hci_open_dev(dev_id);
     if (0 > dev_id || 0 > socket) {
-	/* handle error */
+        /* handle error */
         perror("Can't open socket");
         return;
     }
@@ -399,13 +398,13 @@ static void start_scanning() {
     hci_filter_set_event(EVT_INQUIRY_COMPLETE, &flt);
     if (0 > setsockopt(socket, SOL_HCI, HCI_FILTER, &flt, sizeof(flt))) {
         /* handle error */
-	perror("Can't set HCI filter");
+        perror("Can't set HCI filter");
         return;
     }
     hci_write_inquiry_mode(socket, 0x01, 10);
     if (0 > hci_send_cmd(socket, OGF_HOST_CTL, OCF_WRITE_INQUIRY_MODE,
                          WRITE_INQUIRY_MODE_RP_SIZE, &cp)) {
-	/* handle error */
+        /* handle error */
         perror("Can't set inquiry mode");
         return;
     }
@@ -421,7 +420,7 @@ static void start_scanning() {
 
     if (0 >
         hci_send_cmd(socket, OGF_LINK_CTL, OCF_INQUIRY, INQUIRY_CP_SIZE, &cp)) {
-	/* handle error */
+        /* handle error */
         perror("Can't start inquiry");
         return;
     }
@@ -582,7 +581,7 @@ char *choose_file(char *messagetosend) {
             }
             closedir(messagedir);
         } else {
-	          /* handle error */
+            /* handle error */
             perror("Message files do not exist");
             return NULL;
         }
@@ -603,11 +602,10 @@ char *choose_file(char *messagetosend) {
 Config get_config(char *filename) {
     Config config;
     FILE *file = fopen(filename, "r");
-    if(file == NULL){
-	/* handle error */
-	fprintf(stderr, "Error opening file\n");
-    }
-    else{
+    if (file == NULL) {
+        /* handle error */
+        fprintf(stderr, "Error opening file\n");
+    } else {
         char line[MAX_BUFFER];
         int i = 0;
 
@@ -676,10 +674,10 @@ unsigned int *uuid_str_to_data(char *uuid) {
     char conv[] = "0123456789ABCDEF";
     int len = strlen(uuid);
     unsigned int *data = (unsigned int *)malloc(sizeof(unsigned int) * len);
-    if(data == NULL){
-	/* handle error */
-	fprintf(stderr, "Failed to allocate memory\n");
-	return NULL;
+    if (data == NULL) {
+        /* handle error */
+        fprintf(stderr, "Failed to allocate memory\n");
+        return NULL;
     }
 
     unsigned int *dp = data;
@@ -712,7 +710,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 
     int device_handle = 0;
     if ((device_handle = hci_open_dev(device_id)) < 0) {
-	/* handle error */
+        /* handle error */
         fprintf(stderr, "Could not open device\n");
         exit(EXIT_FAILURE);
     }
@@ -735,7 +733,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 
     int ret = hci_send_req(device_handle, &rq, 1000);
     if (ret < 0) {
-	/* handle error */
+        /* handle error */
         hci_close_dev(device_handle);
         fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
         return (1);
@@ -756,7 +754,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     ret = hci_send_req(device_handle, &rq, 1000);
 
     if (ret < 0) {
-	/* handle error */
+        /* handle error */
         hci_close_dev(device_handle);
         fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
         return (1);
@@ -816,7 +814,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     hci_close_dev(device_handle);
 
     if (ret < 0) {
-	/* handle error */
+        /* handle error */
         fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
         return (1);
     }
@@ -842,7 +840,7 @@ int disable_advertising() {
 
     int device_handle = 0;
     if ((device_handle = hci_open_dev(device_id)) < 0) {
-	/* handle error */
+        /* handle error */
         fprintf(stderr, "Could not open device\n");
         return (1);
     }
@@ -866,7 +864,7 @@ int disable_advertising() {
     hci_close_dev(device_handle);
 
     if (ret < 0) {
-	/* handle error */
+        /* handle error */
         fprintf(stderr, "Can't set advertise mode: %s (%d)\n", strerror(errno),
                 errno);
         return (1);
@@ -899,11 +897,11 @@ void *ble_beacon(void *ptr) {
         sigemptyset(&sigint_handler.sa_mask);
         sigint_handler.sa_flags = 0;
 
-       	if(sigaction(SIGINT, &sigint_handler, NULL) == -1){
-	    /* handle error */
-	    fprintf(stderr, "sigaction error\n");
-	    exit(EXIT_FAILURE);
-	}
+        if (sigaction(SIGINT, &sigint_handler, NULL) == -1) {
+            /* handle error */
+            fprintf(stderr, "sigaction error\n");
+            exit(EXIT_FAILURE);
+        }
 
         fprintf(stderr, "Hit ctrl-c to stop advertising\n");
 
@@ -926,10 +924,10 @@ int main(int argc, char **argv) {
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
     g_filepath = malloc(g_config.filepath_len + g_config.filename_len);
-    if(g_filepath == NULL){
-	/* handle error */
-	fprintf(stderr, "Failed to allocate memory\n");
-	exit(EXIT_FAILURE);
+    if (g_filepath == NULL) {
+        /* handle error */
+        fprintf(stderr, "Failed to allocate memory\n");
+        exit(EXIT_FAILURE);
     }
     memcpy(g_filepath, g_config.filepath, g_config.filepath_len - 1);
     memcpy(g_filepath + g_config.filepath_len - 1, g_config.filename,
@@ -944,15 +942,16 @@ int main(int argc, char **argv) {
             coordinate_Y.b[2], coordinate_Y.b[3]);
 
     /* Device Cleaner */
-    if(pthread_create(&device_cleaner_id, NULL, (void *)timeout_cleaner, NULL)){
-	/* handle error */
-	fprintf(stderr, "decive_cleaner_id pthread_create error\n");
-	return -1;
+    if (pthread_create(&device_cleaner_id, NULL, (void *)timeout_cleaner,
+                       NULL)) {
+        /* handle error */
+        fprintf(stderr, "decive_cleaner_id pthread_create error\n");
+        return -1;
     }
-    if(pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c)){
-	/* handle error */
-	fprintf(stderr, "ble_beacon_id pthread_create error\n");
-	return -1;
+    if (pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c)) {
+        /* handle error */
+        fprintf(stderr, "ble_beacon_id pthread_create error\n");
+        return -1;
     }
 
     for (i = 0; i < MAX_DEVICES; i++) {
@@ -961,7 +960,7 @@ int main(int argc, char **argv) {
     while (1) {
         start_scanning();
     }
-    
+
     free(g_filepath);
     return 0;
 }
