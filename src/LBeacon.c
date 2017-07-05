@@ -78,8 +78,9 @@ long long get_system_time() {
  *
  *  Return value:
  *
- * return false - addr in pushing list * true -
-unused addr */
+ *  false - addr in pushing list
+ *  true - unused addr
+ */
 bool is_unused_addr(char addr[]) {
     int i;
     int j;
@@ -217,8 +218,6 @@ void *send_file(void *ptr) {
  *  Parameters:
  *
  *  bdaddr_t *bdaddr - Bluetooth addr
- *
- *  char has_rssi - @todo
  *
  *  int rssi - RSSI value
  *
