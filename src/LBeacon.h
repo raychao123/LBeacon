@@ -19,9 +19,9 @@
  *
  * Abstract:
  *
- *      BeDIPS uses LBeacons to deliver users' 3D coordinates and textual
- *      descriptions of their locations to their devices. Basically, LBeacon is
- *      an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
+ *      BeDIPS uses LBeacons to deliver to users' devices 3D coordinates and
+ *      textual descriptions of their locations. Basically, a LBeacon is an
+ *      inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
  *      location descriptions of every LBeacon are retrieved from BeDIS
  *      (Building/environment Data and Information System) and stored locally
  *      during deployment and maintenance times. Once initialized, each LBeacon
@@ -56,6 +56,7 @@
 #include "pthread.h"
 #include "semaphore.h"
 #include "signal.h"
+#include "stdbool.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -81,25 +82,25 @@
 // Length of Bluetooth MAC addr
 #define LEN_OF_MAC_ADDRESS 18
 
-// Maximum character of each line of config file
+// Maximum number of characters in each line of config file
 #define MAX_BUFFER 64
 
-// Maximum devices possible with all PUSH dongles
+// Maximum number of devices that all PUSH dongles can handle
 #define MAX_DEVICES 18
 
-// Maximum value of devices that a PUSH dongle can handle
+// Maximum number of devices that a PUSH dongle can handle
 #define MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
 
-// Maximum value of the Bluetooth Object PUSH threads at the same time
+// Maximum number of the Bluetooth Object PUSH threads
 #define MAX_THREADS 18
 
-// The number of user devices each PUSH dongle is responsible for
+// The optimal number of user devices each PUSH dongle is responsible for
 #define NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE 5
 
-// Number of the Bluetooth dongles which is for PUSH function
+// Number of the Bluetooth dongles used for PUSH function
 #define NUM_OF_PUSH_DONGLES 2
 
-// Device ID of the PUSH dongle
+// Device ID of the primary PUSH dongle
 #define PUSH_DONGLE_A 2
 
 // Device ID of the secondary PUSH dongle
@@ -111,7 +112,7 @@
 // Transmission range limiter
 #define RSSI_RANGE -60
 
-// The interval time of same user object push
+// The length of interval time, in milliseconds, a user object is pushed
 #define TIMEOUT 20000
 
 //-----------------------------BLE-----------------------------------------
@@ -124,7 +125,7 @@
 int global_done = 0;
 //-----------------------------BLE-----------------------------------------
 
-// Used for tracking MAC addresses of scanned devices
+// An array used for tracking MAC addresses of scanned devices
 char g_addr[LEN_OF_MAC_ADDRESS] = {0};
 
 // Number of lines in the output file
@@ -136,16 +137,16 @@ unsigned g_initial_timestamp_of_file = 0;
 // The most recent time of the output file
 unsigned g_most_recent_timestamp_of_file = 0;
 
-// Used for handling pushed users and bluetooth device addr
+// An array used for handling pushed users and bluetooth device addr
 char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
-// Stores value to see whether thread is idle or not
+// An array of flags needed to indicate whether each push thread is idle or not
 int g_idle_handler[MAX_DEVICES] = {0};
 
 // Path of object push file
 char *g_filepath;
 
-// Saving the MAC address so it can be stored into database
+// An array for saving the MAC address so it can be stored into database
 char g_saved_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
 /*
@@ -187,16 +188,16 @@ typedef struct Config {
     int num_messages_len;
 } Config;
 
-// Store config information from the passed in file
+// Store config information from the inputted file
 Config g_config;
 
 typedef struct DeviceQueue {
-    long long appear_time[MAX_DEVICES];
-    char appear_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS];
-    char used[MAX_DEVICES];
+    long long first_appearance_time[MAX_DEVICES];
+    char discovered_device_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS];
+    bool is_used_device[MAX_DEVICES];
 } DeviceQueue;
 
-// Stores information for each device
+// Struct for storing information on users' devices discovered by each becon
 DeviceQueue g_device_queue;
 
 typedef struct ThreadAddr {
@@ -215,17 +216,17 @@ ThreadAddr g_thread_addr[MAX_DEVICES];
 // Get the system time
 long long get_system_time();
 
-// Check if the user can be pushed again
-int check_addr_status(char addr[]);
+// Check whether the user can be pushed again
+bool is_unused_addr(char addr[]);
 
-// Thread of PUSH dongle to send file for users
+// Gets the MAC addr of the device and sends the push message to the user device
 void *send_file(void *ptr);
 
 // Send scanned user addr to push dongle
-static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi);
+static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi);
 
 // Print the result of RSSI value for each case
-static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi);
+static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi);
 
 // Track scanned MAC addresses
 static void track_devices(bdaddr_t *bdaddr, char *filename);
