@@ -77,18 +77,18 @@ int check_addr_status(char addr[]) {
     int i;
     int j;
     for (i = 0; i < MAX_DEVICES; i++) {
-        if (0 == strcmp(addr, g_device_queue.appear_addr[i])) {
+        if (0 == strcmp(addr, g_device_queue.discovered_device_addr[i])) {
             if_used = 1;
             return if_used;
         }
     }
     for (i = 0; i < MAX_DEVICES; i++) {
-        if (0 == g_device_queue.used[i]) {
+        if (0 == g_device_queue.used_device[i]) {
             for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-                g_device_queue.appear_addr[i][j] = addr[j];
+                g_device_queue.discovered_device_addr[i][j] = addr[j];
             }
-            g_device_queue.used[i] = 1;
-            g_device_queue.appear_time[i] = get_system_time();
+            g_device_queue.used_device[i] = 1;
+            g_device_queue.first_appearance_time[i] = get_system_time();
             return if_used;
         }
     }
@@ -206,7 +206,7 @@ void *send_file(void *ptr) {
  *
  * @return          none
  */
-static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
+static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
     int idle = -1;
     int i;
     int j;
@@ -238,7 +238,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
 }
 
 /*
- * @fn             print_result
+ * @fn             print_RSSI_value
  *
  * @brief          Print the RSSI value of the user's addr scanned by the scan
  *                 function.
@@ -249,7 +249,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
  *
  * @return         none
  */
-static void print_result(bdaddr_t *bdaddr, char has_rssi, int rssi) {
+static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
     char *ret = choose_file("message1");
     // printf("%s\n", ret);
     char addr[LEN_OF_MAC_ADDRESS];
@@ -436,7 +436,7 @@ static void start_scanning() {
                 case EVT_INQUIRY_RESULT: {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
-                        print_result(&info->bdaddr, 0, 0);
+                        print_RSSI_value(&info->bdaddr, 0, 0);
                         track_devices(&info->bdaddr, "output.txt");
                     }
                 } break;
@@ -445,10 +445,10 @@ static void start_scanning() {
                     for (i = 0; i < results; i++) {
                         info_rssi = (void *)ptr + (sizeof(*info_rssi) * i) + 1;
                         track_devices(&info_rssi->bdaddr, "output.txt");
-                        print_result(&info_rssi->bdaddr, 1, info_rssi->rssi);
+                        print_RSSI_value(&info_rssi->bdaddr, 1,
+                                         info_rssi->rssi);
                         if (info_rssi->rssi > RSSI_RANGE) {
-                            send_to_push_dongle(&info_rssi->bdaddr, 1,
-                                                info_rssi->rssi);
+                            send_to_push_dongle(&info_rssi->bdaddr, info_rssi->rssi);
                         }
                     }
                 } break;
@@ -482,15 +482,17 @@ void *timeout_cleaner(void) {
     int j;
     while (1) {
         for (i = 0; i < MAX_DEVICES; i++) {
-            if (get_system_time() - g_device_queue.appear_time[i] > TIMEOUT &&
-                1 == g_device_queue.used[i]) {
+            if (get_system_time() - g_device_queue.first_appearance_time[i] >
+                    TIMEOUT &&
+                1 == g_device_queue.used_device[i]) {
                 printf("Cleaner time: %lld ms\n",
-                       get_system_time() - g_device_queue.appear_time[i]);
+                       get_system_time() -
+                           g_device_queue.first_appearance_time[i]);
                 for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-                    g_device_queue.appear_addr[i][j] = 0;
+                    g_device_queue.discovered_device_addr[i][j] = 0;
                 }
-                g_device_queue.appear_time[i] = 0;
-                g_device_queue.used[i] = 0;
+                g_device_queue.first_appearance_time[i] = 0;
+                g_device_queue.used_device[i] = 0;
             }
         }
     }
@@ -906,7 +908,7 @@ int main(int argc, char **argv) {
     pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c);
 
     for (i = 0; i < MAX_DEVICES; i++) {
-        g_device_queue.used[i] = 0;
+        g_device_queue.used_device[i] = 0;
     }
     while (1) {
         start_scanning();
