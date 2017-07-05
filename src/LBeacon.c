@@ -12,11 +12,9 @@
  *
  * File Description:
  *
- *     This helper function is called in to check whether the MAC
- *     address given an input is in the push list of the LBeacon. If it is, the
- *     function returns TRUE. If the address is not in the list, the function
- *     adds the address into the list, stamps it with the current system time,
- *     and then returns FALSE.
+ *     This file will detect a phone and then scan for its Bluetooth address.
+ * Depending on the RSSI value, it will determine if it should send location
+ * related files to the user. The detection is based on BLE or OBEX.
  *
  * File Name:
  *
@@ -25,13 +23,13 @@
  * Abstract:
  *
  *      BeDIPS uses LBeacons to deliver users' 3D coordinates and textual
- *      descriptions of their locations to users' devices. Basically, a LBeacon
+ *      descriptions of their locations to user devices. Basically, a LBeacon
  *      is an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
- *      location descriptions of every LBeacon are retrieved from BeDIS
+ *      location description of every LBeacon are retrieved from BeDIS
  *      (Building/environment Data and Information System) and stored locally
  *      during deployment and maintenance times. Once initialized, each LBeacon
  *      broadcasts its coordinates and location description to Bluetooth
- *      enabled devices within its coverage area.
+ *      enabled user devices within its coverage area.
  *
  * Authors:
  *
@@ -80,10 +78,10 @@ long long get_system_time() {
  *
  *  Return value:
  *
- *  FALSE: addr in pushing list
- *  TRUE: Unused addr
+ *  0: addr in pushing list
+ *  1: Unused addr
  */
-bool check_addr_status(char addr[]) {
+int check_addr_status(char addr[]) {
     int is_used = 0;
     int i;
     int j;
@@ -109,7 +107,7 @@ bool check_addr_status(char addr[]) {
 /*
  *  send_file:
  *
- *  Sends the push message to the device. @todo
+ *  Sends the push message to the device. @todo(which device?)
  *
  *  Parameters:
  *
@@ -213,7 +211,7 @@ void *send_file(void *ptr) {
 /*
  *  send_to_push_dongle:
  *
- *  Sends the MAC addr of device to send_file function. @todo
+ *  Sends the MAC addr of user device to send_file function. @todo
  *
  *  Parameters:
  *
@@ -244,7 +242,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, char has_rssi, int rssi) {
             }
         }
     }
-    if (-1 != idle && FALSE == check_addr_status(addr)) {
+    if (-1 != idle && 0 == check_addr_status(addr)) {
         ThreadAddr *thread_addr = &g_thread_addr[idle];
         g_idle_handler[idle] = 1;
         printf("%zu\n", sizeof(addr) / sizeof(addr[0]));
@@ -537,15 +535,6 @@ void *timeout_cleaner(void) {
 }
 
 /*
- * @fn              choose_file
- *
- * @brief           Receive message and then sends user the filepath where
- *                  message is located.
- *
- * @thread_addr     none
- *
- * @return          filepath of designated message
- *
  *  choose_file:
  *
  *  Receive message and then sends user the filepath where
@@ -923,13 +912,6 @@ int disable_advertising() {
 void ctrlc_handler(int s) { global_done = 1; }
 
 /*
- * @fn              ble_beacon
- *
- * @brief           BLE beacon initialization
- *
- * @thread_addr     ptr - pointer
- *
- * @return          none
  *  ble_beacon:
  *
  *  BLE beacon initialization
