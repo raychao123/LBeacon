@@ -81,7 +81,7 @@ long long get_system_time() {
  *
  *  Parameters:
  *
- *  char addr[] - scanned MAC address of bluetooth device
+ *  addr - scanned MAC address of bluetooth device
  *
  *  Return value:
  *
@@ -90,24 +90,24 @@ long long get_system_time() {
  */
 bool is_unused_addr(char addr[]) {
     /* @todo add comments */
-    int i;
-    int j;
+    int i;  // iterator to loop total number of devices
+    int j;  // iterator to loop the length of bluetooth device's MAC address
 
     /* @todo */
     for (i = 0; i < MAX_DEVICES; i++) {
-        if (0 == strcmp(addr, g_device_queue.discovered_device_addr[i])) {
+        if (0 == strcmp(addr, g_push_list.discovered_device_addr[i])) {
             return true;
         }
     }
 
     /* @todo */
     for (i = 0; i < MAX_DEVICES; i++) {
-        if (false == g_device_queue.is_used_device[i]) {
+        if (false == g_push_list.is_used_device[i]) {
             for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-                g_device_queue.discovered_device_addr[i][j] = addr[j];
+                g_push_list.discovered_device_addr[i][j] = addr[j];
             }
-            g_device_queue.is_used_device[i] = true;
-            g_device_queue.first_appearance_time[i] = get_system_time();
+            g_push_list.is_used_device[i] = true;
+            g_push_list.first_appearance_time[i] = get_system_time();
             return false;
         }
     }
@@ -123,7 +123,7 @@ bool is_unused_addr(char addr[]) {
  *
  *  Parameters:
  *
- *  void *ptr - @todo
+ *  ptr - @todo
  *
  *  Return value:
  *
@@ -131,18 +131,18 @@ bool is_unused_addr(char addr[]) {
  */
 void *send_file(void *ptr) {
     /* @todo add comments */
-    ThreadAddr *thread_addr = (ThreadAddr *)ptr;
-    char *addr = NULL;
-    char *filename;
-    int channel = -1;
-    int dev_id;
-    int socket;
-    int i;
-    int ret;
+    ThreadAddr *thread_addr = (ThreadAddr *)ptr;  //
+    pthread_t tid = pthread_self();               //
+    obexftp_client_t *cli = NULL;                 //
+    char *addr = NULL;                            //
+    char *filename;                               //
+    int channel = -1;                             //
+    int dev_id;                                   //
+    int socket;                                   //
+    int i;                                        //
+    int ret;                                      //
 
     /* @todo */
-    pthread_t tid = pthread_self();
-    obexftp_client_t *cli = NULL;
     if (thread_addr->thread_id >= NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE) {
         dev_id = PUSH_DONGLE_B;
     } else {
@@ -185,7 +185,7 @@ void *send_file(void *ptr) {
         pthread_exit(NULL);
     }
 
-    /* Connect to device */
+    /* Connect to the scanned device */
     ret = obexftp_connect_push(cli, addr, channel);
 
     if (0 > ret) {
@@ -233,8 +233,8 @@ void *send_file(void *ptr) {
  *
  *  Parameters:
  *
- *  bdaddr_t *bdaddr - bluetooth device address
- *  int rssi - RSSI value
+ *  bdaddr - bluetooth device address
+ *  rssi - RSSI value
  *
  *  Return value:
  *
@@ -289,9 +289,9 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
  *
  *  Parameters:
  *
- *  bdaddr_t *bdaddr - bluetooth device address
- *  bool has_rssi - whether the bluetooth device has an RSSI value or not
- *  int rssi - RSSI value
+ *  bdaddr - bluetooth device address
+ *  has_rssi - whether the bluetooth device has an RSSI value or not
+ *  rssi - RSSI value
  *
  *  Return value:
  *
@@ -327,8 +327,8 @@ static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
  *
  *  Parameters:
  *
- *  bdaddr_t *bdaddr - bluetooth device address
- *  char *filename - name of the file where all the data will be stored
+ *  bdaddr - bluetooth device address
+ *  filename - name of the file where all the data will be stored
  *
  *  Return value:
  *
@@ -350,7 +350,7 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         }
         fputs("LBeacon ID: ########", fd);
         fclose(fd);
-        g_size_of_file++; /* increment line */
+        g_size_of_file++;
         g_initial_timestamp_of_file = timestamp;
         memset(&g_addr[0], 0, sizeof(g_addr));
     }
@@ -564,17 +564,17 @@ void *timeout_cleaner(void) {
     /* @todo */
     while (1) {
         for (i = 0; i < MAX_DEVICES; i++) {
-            if (get_system_time() - g_device_queue.first_appearance_time[i] >
+            if (get_system_time() - g_push_list.first_appearance_time[i] >
                     TIMEOUT &&
-                true == g_device_queue.is_used_device[i]) {
-                printf("Cleaner time: %lld ms\n",
-                       get_system_time() -
-                           g_device_queue.first_appearance_time[i]);
+                true == g_push_list.is_used_device[i]) {
+                printf(
+                    "Cleaner time: %lld ms\n",
+                    get_system_time() - g_push_list.first_appearance_time[i]);
                 for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-                    g_device_queue.discovered_device_addr[i][j] = 0;
+                    g_push_list.discovered_device_addr[i][j] = 0;
                 }
-                g_device_queue.first_appearance_time[i] = 0;
-                g_device_queue.is_used_device[i] = false;
+                g_push_list.first_appearance_time[i] = 0;
+                g_push_list.is_used_device[i] = false;
             }
         }
     }
@@ -588,7 +588,7 @@ void *timeout_cleaner(void) {
  *
  *  Parameters:
  *
- *  char *messagetosend - The name of the message file we want to retreive.
+ *  messagetosend - name of the message file we want to retreive
  *
  *  Return value:
  *
@@ -664,7 +664,7 @@ char *choose_file(char *messagetosend) {
 }
 
 /*
- *  get_config
+ *  get_config:
  *
  *  While not end of file, read config file line by line and store data into the
  *  global variable of a Config struct. The variable i is used to know which
@@ -672,7 +672,7 @@ char *choose_file(char *messagetosend) {
  *
  *  Parameters:
  *
- *  char *filename - the name of the config file that stores all the beacon data
+ *  filename - the name of the config file that stores all the beacon data
  *
  *  Return value:
  *
@@ -735,11 +735,11 @@ Config get_config(char *filename) {
 /*
  *  uuid_str_to_data:
  *
- *  Converts the uuid to a data value.
+ *  @todo
  *
  *  Parameters:
  *
- *  char *uuid - unique identifier @todo
+ *  uuid - @todo
  *
  *  Return value:
  *
@@ -749,6 +749,7 @@ unsigned int *uuid_str_to_data(char *uuid) {
     char conv[] = "0123456789ABCDEF";
     int len = strlen(uuid);
     unsigned int *data = (unsigned int *)malloc(sizeof(unsigned int) * len);
+
     if (data == NULL) {
         /* handle error */
         fprintf(stderr, "Failed to allocate memory\n");
@@ -773,8 +774,8 @@ unsigned int *uuid_str_to_data(char *uuid) {
  *
  *  Parameters:
  *
- *  int in - @todo
- *  int t - @todo
+ *  in - @todo
+ *  t - @todo
  *
  *  Return value:
  *
@@ -787,13 +788,13 @@ unsigned int twoc(int in, int t) {
 /*
  *  enable_advertising:
  *
- *  Determines the advertising capabilities and enables advertising.
+ *  @todo Determines the advertising capabilities and enables advertising.
  *
  *  Parameters:
  *
- *  int advertising_interval - @todo
- *  char *advertising_uuid - @todo
- *  int rssi_value - @todo
+ *  advertising_interval - @todo
+ *  advertising_uuid - @todo
+ *  rssi_value - @todo
  *
  *  Return value:
  *
@@ -914,6 +915,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     }
 
     if (status) {
+        /* handle error */
         fprintf(stderr, "LE set advertise returned status %d\n", status);
         return (1);
     }
@@ -922,7 +924,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 /*
  *  disable_advertising:
  *
- *  Determines the advertising capabilities and disables advertising.
+ *  @todo Determines the advertising capabilities and disables advertising.
  *
  *  Parameters:
  *
@@ -967,6 +969,7 @@ int disable_advertising() {
     }
 
     if (status) {
+        /* handle error */
         fprintf(stderr, "LE set advertise enable on returned status %d\n",
                 status);
         return (1);
@@ -981,7 +984,7 @@ int disable_advertising() {
  *
  *  Parameters:
  *
- *  int s - @todo
+ *  s - @todo
  *
  *  Return value:
  *
@@ -992,11 +995,11 @@ void ctrlc_handler(int s) { g_done = true; }
 /*
  *  ble_beacon:
  *
- *  BLE beacon initialization
+ *  @todo
  *
  *  Parameters:
  *
- *  ptr - pointer
+ *  ptr - @todo
  *
  *  Return value:
  *
@@ -1004,9 +1007,10 @@ void ctrlc_handler(int s) { g_done = true; }
  */
 void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
+
+    /* @todo */
     if (rc == 0) {
         struct sigaction sigint_handler;
-
         sigint_handler.sa_handler = ctrlc_handler;
         sigemptyset(&sigint_handler.sa_mask);
         sigint_handler.sa_flags = 0;
@@ -1023,17 +1027,18 @@ void *ble_beacon(void *ptr) {
             sleep(1);
         }
 
+        /* When signal received, disable message advertising */
         fprintf(stderr, "Shutting down\n");
         disable_advertising();
     }
 }
 
 int main(int argc, char **argv) {
-    char cmd[100];
-    char ble_buffer[100];  // HCI command for BLE beacon
-    char hex_c[32];
-    pthread_t device_cleaner_id, ble_beacon_id;
-    int i;
+    char ble_buffer[100];          // HCI command for BLE beacon
+    char hex_c[32];                // buffer that contains the local of beacon
+    pthread_t timeout_cleaner_id;  // timeout_cleaner thread ID
+    pthread_t ble_beacon_id;       // ble_beacon thread ID
+    int i;                         // iterator to loop through push list
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
@@ -1050,20 +1055,21 @@ int main(int argc, char **argv) {
     coordinate_Y.f = (float)atof(g_config.coordinate_Y);
     level.f = (float)atof(g_config.level);
 
+    /* Store coordinates of beacon location */
     sprintf(hex_c, "E2C56DB5DFFB48D2B060D0F5%02x%02x%02x%02x%02x%02x%02x%02x",
             coordinate_X.b[0], coordinate_X.b[1], coordinate_X.b[2],
             coordinate_X.b[3], coordinate_Y.b[0], coordinate_Y.b[1],
             coordinate_Y.b[2], coordinate_Y.b[3]);
 
-    /* Device Cleaner */
-    if (pthread_create(&device_cleaner_id, NULL, (void *)timeout_cleaner,
+    /* Device cleaner */
+    if (pthread_create(&timeout_cleaner_id, NULL, (void *)timeout_cleaner,
                        NULL)) {
         /* handle error */
         fprintf(stderr, "Error with timeout_cleaner using pthread_create\n");
         return -1;
     }
 
-    /* @todo */
+    /* Enable message advertising to BLE bluetooth devices */
     if (pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c)) {
         /* handle error */
         fprintf(stderr, "Error with ble_beacon using pthread_create\n");
@@ -1072,7 +1078,7 @@ int main(int argc, char **argv) {
 
     /* Reset the device queue */
     for (i = 0; i < MAX_DEVICES; i++) {
-        g_device_queue.is_used_device[i] = false;
+        g_push_list.is_used_device[i] = false;
     }
 
     /* Start scanning for devices */

@@ -211,14 +211,14 @@ typedef struct Config {
 // Struct for storing config information from the inputted file
 Config g_config;
 
-typedef struct DeviceQueue {
+typedef struct PushList {
     long long first_appearance_time[MAX_DEVICES];
     char discovered_device_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS];
     bool is_used_device[MAX_DEVICES];
-} DeviceQueue;
+} PushList;
 
 // Struct for storing information on users' devices discovered by each becon
-DeviceQueue g_device_queue;
+PushList g_push_list;
 
 typedef struct ThreadAddr {
     pthread_t thread;
