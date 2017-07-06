@@ -126,31 +126,34 @@ bool is_used_addr(char addr[]) {
  *
  *  Parameters:
  *
- *  ptr - @todo
+ *  ptr - MAC address that will receive the message file
  *
  *  Return value:
  *
  *  None
  */
 void *send_file(void *ptr) {
-    /* @todo */
-    ThreadAddr *thread_addr = (ThreadAddr *)ptr;  //
-    pthread_t tid = pthread_self();               //
-    obexftp_client_t *cli = NULL;                 //
-    char *addr = NULL;                            //
-    char *filename;                               //
-    int channel = -1;                             //
-    int dev_id;                                   //
-    int socket;                                   //
-    int i;                                        //
-    int ret;                                      //
+    ThreadAddr *thread_addr = (ThreadAddr *)ptr;
+    pthread_t tid = pthread_self();
+    obexftp_client_t *cli = NULL;
+    char *addr = NULL;
+    char *filename;
+    int channel = -1;
+    int dev_id;
+    int socket;
+    int i;
+    int ret;
 
-    /* @todo */
+    /* Split the half of the thread ID to one dongle and the other half to the
+     * second dongle. */
     if (thread_addr->thread_id >= NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE) {
         dev_id = PUSH_DONGLE_B;
     } else {
         dev_id = PUSH_DONGLE_A;
     }
+
+    /* Open socket and use current time as start time to determine how long it
+     * takes to send the file to the bluetooth device. */
     socket = hci_open_dev(dev_id);
     if (0 > dev_id || 0 > socket) {
         /* handle error */
@@ -158,8 +161,6 @@ void *send_file(void *ptr) {
         pthread_exit(NULL);
     }
     printf("Thread number %d\n", thread_addr->thread_id);
-
-    /* @todo */
     long long start = get_system_time();
     addr = (char *)thread_addr->addr;
     channel = obexftp_browse_bt_push(addr);
@@ -234,23 +235,26 @@ void *send_file(void *ptr) {
 /*
  *  send_to_push_dongle:
  *
- *  @todo
+ *  For each new MAC address of scanned bluetooth device, add to an array of
+ *  ThreadAddr struct that will give it a thread ID and send the MAC address to
+ *  send_file. Only add MAC address if it isn't in the push list and does not
+ *  have a thread ID. If the bluetooth device is already in the push list, don't
+ *  send to push dongle again.
  *
  *  Parameters:
  *
  *  bdaddr - bluetooth device address
- *  rssi - RSSI value
+ *  rssi - RSSI value of bluetooth device
  *
  *  Return value:
  *
  *  None
  */
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
-    /* @todo add comments */
-    int idle = -1;
-    int i;
-    int j;
-    char addr[LEN_OF_MAC_ADDRESS];
+    int idle = -1;                  // used to make sure only max of 18 threads
+    int i;                          // iterator through number of push dongle
+    int j;                          // iterator through each block of dongle
+    char addr[LEN_OF_MAC_ADDRESS];  // store the MAC address as string
 
     /* Converts the bluetooth device address to string */
     ba2str(bdaddr, addr);
@@ -268,7 +272,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
         }
     }
 
-    /* @todo */
+    /* Create a thread for a new MAC address on the push list. */
     if (-1 != idle && false == is_used_addr(addr)) {
         ThreadAddr *thread_addr = &g_thread_addr[idle];
         g_idle_handler[idle] = 1;
@@ -297,7 +301,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
  *
  *  bdaddr - bluetooth device address
  *  has_rssi - whether the bluetooth device has an RSSI value or not
- *  rssi - RSSI value
+ *  rssi - RSSI value of bluetooth device
  *
  *  Return value:
  *
@@ -403,7 +407,7 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
     }
 
     /* Send file to gateway if exceeds 1000 lines or reaches 6 hours. */
-    /* @todo
+    /*
     unsigned diff = timestamp - g_initial_timestamp_of_file;
     if (1000 <= g_size_of_file || 21600 <= diff) {
         g_size_of_file = 0;
@@ -432,21 +436,20 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
  *  None
  */
 static void start_scanning() {
-    /* @todo */
-    struct hci_filter flt;                  //
-    struct pollfd p;                        //
-    unsigned char buf[HCI_MAX_EVENT_SIZE];  //
-    unsigned char *ptr;                     //
-    hci_event_hdr *hdr;                     //
-    inquiry_cp cp;                          //
-    inquiry_info_with_rssi *info_rssi;      //
-    inquiry_info *info;                     //
-    bool cancelled = false;                 //
-    int dev_id = 0;                         //
-    int socket = 0;                         //
-    int len;                                //
-    int results;                            //
-    int i;                                  //
+    struct hci_filter flt;
+    struct pollfd p;
+    unsigned char buf[HCI_MAX_EVENT_SIZE];
+    unsigned char *ptr;
+    hci_event_hdr *hdr;
+    inquiry_cp cp;
+    inquiry_info_with_rssi *info_rssi;
+    inquiry_info *info;
+    bool cancelled = false;
+    int dev_id = 0;
+    int socket = 0;
+    int len;
+    int results;
+    int i;
 
     dev_id = SCAN_DONGLE;
     // printf("%d", dev_id);
@@ -612,21 +615,21 @@ void *timeout_cleaner(void) {
  *  ret - message filepath
  */
 char *choose_file(char *messagetosend) {
-    DIR *groupdir;            // Dirent that stores list of directories
-    struct dirent *groupent;  // Dirent struct that stores directory info
-    int num_messages;         // Number of message listed in config file
-    int num_groups;           // Number of groups listed in config file
-    char path[256];           // Store filepath of messagetosend location
-    int count = 0;            // Iterator for number of messages and groups
-    int i = 0;                // Iterator for number of groups
-    char *ret;                // Return value; converts path to a char *
+    DIR *groupdir;            // dirent that stores list of directories
+    struct dirent *groupent;  // dirent struct that stores directory info
+    int num_messages;         // number of message listed in config file
+    int num_groups;           // number of groups listed in config file
+    char path[256];           // store filepath of messagetosend location
+    int count = 0;            // iterator for number of messages and groups
+    int i = 0;                // iterator for number of groups
+    char *ret;                // return value; converts path to a char *
 
     /* Convert number of groups and messages from string to integer. */
     num_groups = atoi(g_config.num_groups);
     num_messages = atoi(g_config.num_messages);
 
-    char groups[num_groups][256];      // Array of buffer for group file names
-    char messages[num_messages][256];  // Array of buffer for message file names
+    char groups[num_groups][256];      // array of buffer for group file names
+    char messages[num_messages][256];  // array of buffer for message file names
 
     /* Stores all the name of files and directories in groups. */
     groupdir = opendir("/home/pi/LBeacon/messages/");
