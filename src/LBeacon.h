@@ -237,7 +237,7 @@ ThreadAddr g_thread_addr[MAX_DEVICES];
 long long get_system_time();
 
 // Check whether the user's address is being used or can be pushed to again
-bool is_unused_addr(char addr[]);
+bool is_used_addr(char addr[]);
 
 // Send the push message to the user's device by a working asynchronous thread
 void *send_file(void *ptr);

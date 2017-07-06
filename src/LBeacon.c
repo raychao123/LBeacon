@@ -49,7 +49,7 @@
 /*
  *  get_system_time:
  *
- *  Helper function called by is_unused_addr to give each user's MAC address the
+ *  Helper function called by is_used_addr to give each user's MAC address the
  *  time it is added to the push list. Helper function called by timeout_cleaner
  *  to check if it has been 20 seconds since the beacon was last added to the
  *  push list for sending the broadcast message.
@@ -63,16 +63,18 @@
  *  system_time - System time in milliseconds
  */
 long long get_system_time() {
-    /* @todo add comments */
-    struct timeb t;
-    long long system_time;
-    ftime(&t);
+    struct timeb t;         // struct that stores the time
+    long long system_time;  // return value as long long
+    ftime(&t);              // get current time as Epoch and store in t
+
+    /* Convert time from Epoch to time in milliseconds as long long type */
     system_time = 1000 * t.time + t.millitm;
+
     return system_time;
 }
 
 /*
- *  is_unused_addr:
+ *  is_used_addr:
  *
  *  Helper function called by send_file to check whether the user's MAC address
  *  given as input is in the push list. If the user's MAC address is not in the
@@ -85,22 +87,23 @@ long long get_system_time() {
  *
  *  Return value:
  *
- *  false - MAC address is in pushing list
- *  true - unused MAC address
+ *  false - new MAC address, add to push list
+ *  true - used MAC address
  */
-bool is_unused_addr(char addr[]) {
-    /* @todo add comments */
+bool is_used_addr(char addr[]) {
     int i;  // iterator to loop total number of devices
     int j;  // iterator to loop the length of bluetooth device's MAC address
 
-    /* @todo */
+    /* If the MAC address passed into the function is already in the push list,
+     * just return true. */
     for (i = 0; i < MAX_DEVICES; i++) {
         if (0 == strcmp(addr, g_push_list.discovered_device_addr[i])) {
             return true;
         }
     }
 
-    /* @todo */
+    /* If the scanned bluetooth device is not in the push list, need to add the
+     * MAC address to the push list. */
     for (i = 0; i < MAX_DEVICES; i++) {
         if (false == g_push_list.is_used_device[i]) {
             for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
@@ -130,7 +133,7 @@ bool is_unused_addr(char addr[]) {
  *  None
  */
 void *send_file(void *ptr) {
-    /* @todo add comments */
+    /* @todo */
     ThreadAddr *thread_addr = (ThreadAddr *)ptr;  //
     pthread_t tid = pthread_self();               //
     obexftp_client_t *cli = NULL;                 //
@@ -155,6 +158,8 @@ void *send_file(void *ptr) {
         pthread_exit(NULL);
     }
     printf("Thread number %d\n", thread_addr->thread_id);
+
+    /* @todo */
     long long start = get_system_time();
     addr = (char *)thread_addr->addr;
     channel = obexftp_browse_bt_push(addr);
@@ -250,7 +255,8 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
     /* Converts the bluetooth device address to string */
     ba2str(bdaddr, addr);
 
-    /* @todo */
+    /* If the MAC address is already in the push list, return. Don't send to
+     * push dongle again. */
     for (i = 0; i < NUM_OF_PUSH_DONGLES; i++) {
         for (j = 0; j < MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE; j++) {
             if (0 == strcmp(addr, g_pushed_user_addr[i * j + j])) {
@@ -263,7 +269,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
     }
 
     /* @todo */
-    if (-1 != idle && false == is_unused_addr(addr)) {
+    if (-1 != idle && false == is_used_addr(addr)) {
         ThreadAddr *thread_addr = &g_thread_addr[idle];
         g_idle_handler[idle] = 1;
         printf("%zu\n", sizeof(addr) / sizeof(addr[0]));
@@ -357,7 +363,7 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
 
     /* If timestamp already exists add MAC address to end of previous line, else
      * create new line. Double check that MAC address is not already added at a
-     * given timestamp using strstr(). */
+     * given timestamp using strstr. */
     ba2str(bdaddr, g_addr);
     if (timestamp != g_most_recent_timestamp_of_file) {
         FILE *output;
@@ -396,19 +402,26 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         fclose(output);
     }
 
-    /* @todo: send file to gateway if exceeds 1000 lines or reaches 6 hours */
-    // unsigned diff = timestamp - g_initial_timestamp_of_file;
-    // if (1000 <= g_size_of_file || 21600 <= diff) {
-    //     g_size_of_file = 0;
-    //     g_most_recent_timestamp_of_file = 0;
-    //     // send_file_to_gateway();
-    // }
+    /* Send file to gateway if exceeds 1000 lines or reaches 6 hours. */
+    /* @todo
+    unsigned diff = timestamp - g_initial_timestamp_of_file;
+    if (1000 <= g_size_of_file || 21600 <= diff) {
+        g_size_of_file = 0;
+        g_most_recent_timestamp_of_file = 0;
+        // send_file_to_gateway();
+    }
+    */
 }
 
 /*
  *  start_scanning:
  *
- *  @todo
+ *  Scan continuously for bluetooth devices under the beacon until need to
+ *  cancel scanning. For each scanned device, it will fall under one of three
+ *  cases. A bluetooth device with no RSSI value or with a RSSI value, or if the
+ *  user wants to cancel the scanning. When the device is within RSSI value, the
+ *  bluetooth device will be added to the push list so the message can be sent
+ *  to the phone. This function running by the main thread.
  *
  *  Parameters:
  *
@@ -419,21 +432,21 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
  *  None
  */
 static void start_scanning() {
-    /* @todo add comments */
-    struct hci_filter flt;
-    struct pollfd p;
-    unsigned char buf[HCI_MAX_EVENT_SIZE];
-    unsigned char *ptr;
-    hci_event_hdr *hdr;
-    inquiry_cp cp;
-    inquiry_info_with_rssi *info_rssi;
-    inquiry_info *info;
-    bool cancelled = false;
-    int dev_id = 0;
-    int socket = 0;
-    int len;
-    int results;
-    int i;
+    /* @todo */
+    struct hci_filter flt;                  //
+    struct pollfd p;                        //
+    unsigned char buf[HCI_MAX_EVENT_SIZE];  //
+    unsigned char *ptr;                     //
+    hci_event_hdr *hdr;                     //
+    inquiry_cp cp;                          //
+    inquiry_info_with_rssi *info_rssi;      //
+    inquiry_info *info;                     //
+    bool cancelled = false;                 //
+    int dev_id = 0;                         //
+    int socket = 0;                         //
+    int len;                                //
+    int results;                            //
+    int i;                                  //
 
     dev_id = SCAN_DONGLE;
     // printf("%d", dev_id);
@@ -503,7 +516,7 @@ static void start_scanning() {
             results = ptr[0];
 
             switch (hdr->evt) {
-                /* @todo */
+                /* Scanned device with no RSSI value. */
                 case EVT_INQUIRY_RESULT: {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
@@ -512,7 +525,8 @@ static void start_scanning() {
                     }
                 } break;
 
-                /* @todo */
+                /* Scanned device with RSSI value. If within range, send message
+                 * to bluetooth device. */
                 case EVT_INQUIRY_RESULT_WITH_RSSI: {
                     for (i = 0; i < results; i++) {
                         info_rssi = (void *)ptr + (sizeof(*info_rssi) * i) + 1;
@@ -526,7 +540,7 @@ static void start_scanning() {
                     }
                 } break;
 
-                /* @todo */
+                /* Ending the scanning process. */
                 case EVT_INQUIRY_COMPLETE: {
                     cancelled = true;
                 } break;
@@ -557,11 +571,11 @@ static void start_scanning() {
  *  None
  */
 void *timeout_cleaner(void) {
-    /* @todo add comments */
-    int i;
-    int j;
+    int i;  // iterator to loop total number of devices
+    int j;  // iterator to loop the length of bluetooth device's MAC address
 
-    /* @todo */
+    /* In the background, continuously check if it has been 20 seconds since the
+     * bluetooth device was added to the push list. If so, remove from list. */
     while (1) {
         for (i = 0; i < MAX_DEVICES; i++) {
             if (get_system_time() - g_push_list.first_appearance_time[i] >
@@ -583,34 +597,40 @@ void *timeout_cleaner(void) {
 /*
  *  choose_file:
  *
- *  @todo Receive message and then sends user the filepath where message is
- *  located.
+ *  Receive name of message file and then sends user the filepath where message
+ *  is located. Go through each directory in the messages folder of LBeacon and
+ *  store the name into an array. Go through each of the directories to find the
+ *  designated message we want to broadcast to the user's under the beacon. Once
+ *  the message name is located, return the filepath as a string.
  *
  *  Parameters:
  *
- *  messagetosend - name of the message file we want to retreive
+ *  messagetosend - name of the message file we want to retrieve
  *
  *  Return value:
  *
  *  ret - message filepath
  */
 char *choose_file(char *messagetosend) {
-    /* @todo add comments */
-    DIR *groupdir;
-    struct dirent *groupent;
-    int num_messages = atoi(g_config.num_messages);
-    int num_groups = atoi(g_config.num_groups);
-    char messages[num_messages][256];
-    char groups[num_groups][256];
-    char path[256];
-    int count = 0;
-    int i = 0;
-    char *ret;
+    DIR *groupdir;            // Dirent that stores list of directories
+    struct dirent *groupent;  // Dirent struct that stores directory info
+    int num_messages;         // Number of message listed in config file
+    int num_groups;           // Number of groups listed in config file
+    char path[256];           // Store filepath of messagetosend location
+    int count = 0;            // Iterator for number of messages and groups
+    int i = 0;                // Iterator for number of groups
+    char *ret;                // Return value; converts path to a char *
 
-    /* @todo */
+    /* Convert number of groups and messages from string to integer. */
+    num_groups = atoi(g_config.num_groups);
+    num_messages = atoi(g_config.num_messages);
+
+    char groups[num_groups][256];      // Array of buffer for group file names
+    char messages[num_messages][256];  // Array of buffer for message file names
+
+    /* Stores all the name of files and directories in groups. */
     groupdir = opendir("/home/pi/LBeacon/messages/");
     if (groupdir) {
-        /* stores all the files and directories within directory */
         while ((groupent = readdir(groupdir)) != NULL) {
             if (strcmp(groupent->d_name, ".") != 0 &&
                 strcmp(groupent->d_name, "..") != 0) {
@@ -625,23 +645,23 @@ char *choose_file(char *messagetosend) {
         return NULL;
     }
 
-    /* @todo */
     memset(path, 0, 256);
     count = 0;
+
+    /* Go through each message in directory and store each file name. */
     for (i = 0; i < num_groups; i++) {
-        /* combine strings to make file path */
+        /* Concatenate strings to make file path */
         sprintf(path, "/home/pi/LBeacon/messages/");
         strcat(path, groups[i]);
         DIR *messagedir;
         struct dirent *messageent;
         messagedir = opendir(path);
         if (messagedir) {
-            /* go through each message in directory and store each
-             * file name */
             while ((messageent = readdir(messagedir)) != NULL) {
                 if (strcmp(messageent->d_name, ".") != 0 &&
                     strcmp(messageent->d_name, "..") != 0) {
                     strcpy(messages[count], messageent->d_name);
+                    /* If message name found, return filepath. */
                     if (strcmp(messages[count], messagetosend) == 0) {
                         strcat(path, "/");
                         strcat(path, messages[count]);
@@ -689,7 +709,8 @@ Config get_config(char *filename) {
         char line[MAX_BUFFER];  // stores the string of current line being read
         int i = 0;              // keeps track of which line being processed
 
-        /* @todo */
+        /* If there are still lines to read in the config file, read the line
+         * and store each information into the config struct. */
         while (fgets(line, sizeof(line), file) != NULL) {
             char *config_message;
             config_message = strstr((char *)line, DELIMITER);
