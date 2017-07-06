@@ -598,11 +598,11 @@ char *choose_file(char *messagetosend) {
     /* @todo add comments */
     DIR *groupdir;
     struct dirent *groupent;
+    int num_messages = atoi(g_config.num_messages);
+    int num_groups = atoi(g_config.num_groups);
     char messages[num_messages][256];
     char groups[num_groups][256];
     char path[256];
-    int num_messages = atoi(g_config.num_messages);
-    int num_groups = atoi(g_config.num_groups);
     int count = 0;
     int i = 0;
     char *ret;
