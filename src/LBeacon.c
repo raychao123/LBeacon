@@ -24,8 +24,8 @@
  *
  * Abstract:
  *
- *      BeDIPS uses LBeacons to deliver users' 3D coordinates and textual
- *      descriptions of their locations to user devices. Basically, a LBeacon
+ *      BeDIPS uses LBeacons to deliver 3D coordinates and textual
+ *      descriptions of their locations to users' devices. Basically, a LBeacon
  *      is an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
  *      location description of every LBeacon are retrieved from BeDIS
  *      (Building/environment Data and Information System) and stored locally
@@ -41,7 +41,6 @@
  *      Han Hu, hhu14@illinois.edu
  *      Jeffrey Lin, lin.jeff03@gmail.com
  *      Howard Hsu, haohsu0823@gmail.com
- *
  */
 
 #include "LBeacon.h"
@@ -77,9 +76,10 @@ long long get_system_time() {
  *  is_used_addr:
  *
  *  Helper function called by send_file to check whether the user's MAC address
- *  given as input is in the push list. If the user's MAC address is not in the
- *  push list, the function puts the user's MAC address in the push list and
- *  waits for timeout_cleaner to remove the user's MAC address from the list.
+ *  given as input is in the push list of the LBeacon. If it is, the function
+ *  returns true. If the address is not in the list, the function adds the
+ *  address into the list, stamps it with current system time, and then returns
+ *  false.
  *
  *  Parameters:
  *
