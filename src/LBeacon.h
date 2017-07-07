@@ -198,6 +198,7 @@ typedef struct Config {
     char rssi_coverage[MAX_BUFFER];
     char num_groups[MAX_BUFFER];
     char num_messages[MAX_BUFFER];
+    char uuid[MAX_BUFFER];
     int coordinate_X_len;
     int coordinate_Y_len;
     int filename_len;
@@ -206,6 +207,7 @@ typedef struct Config {
     int rssi_coverage_len;
     int num_groups_len;
     int num_messages_len;
+    int uuid_len;
 } Config;
 
 // Struct for storing config information from the inputted file
