@@ -236,6 +236,7 @@ ThreadAddr g_thread_addr[MAX_DEVICES];
 /*
  * UTILITY FUNCTIONS
  */
+
 unsigned int *uuid_str_to_data(char *uuid);
 unsigned int twoc(int in, int t);
 void ctrlc_handler(int s);

@@ -516,7 +516,7 @@ static void start_scanning() {
         return;
     }
 
-    /* @todo */
+    /* @todo CONSTANTS */
     memset(&cp, 0, sizeof(cp));
     cp.lap[2] = 0x9e;
     cp.lap[1] = 0x8b;
@@ -612,16 +612,17 @@ static void start_scanning() {
 void *cleanup_push_list(void) {
     int i;  // iterator to loop total number of devices
     int j;  // iterator to loop the length of bluetooth device's MAC address
+    bool cancelled;
 
     /* In the background, continuously check if it has been 20 seconds since the
      * bluetooth device was added to the push list. If so, remove from list. */
-    while (1) {
+    while (cancelled == false) {
         for (i = 0; i < MAX_DEVICES; i++) {
             if (get_system_time() - g_push_list.first_appearance_time[i] >
                     TIMEOUT &&
-                true == g_push_list.is_used_device[i]) {
+                g_push_list.is_used_device[i] == true) {
                 printf(
-                    "Cleaner time: %lld ms\n",
+                    "Time since last cleanup: %lld ms\n",
                     get_system_time() - g_push_list.first_appearance_time[i]);
                 for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
                     g_push_list.discovered_device_addr[i][j] = 0;
@@ -701,7 +702,7 @@ char *choose_file(char *messagetosend) {
                     strcmp(messageent->d_name, "..") != 0) {
                     strcpy(messages[count], messageent->d_name);
                     /* If message name found, return filepath. */
-                    if (strcmp(messages[count], messagetosend) == 0) {
+                    if (0 == strcmp(messages[count], messagetosend)) {
                         strcat(path, "/");
                         strcat(path, messages[count]);
                         // printf("%s\n", path);
@@ -818,6 +819,8 @@ Config get_config(char *filename) {
 int enable_advertising(int advertising_interval, char *advertising_uuid,
                        int rssi_value) {
     int device_id = hci_get_route(NULL);
+    // @todo test for error
+
     int device_handle = 0;
     if ((device_handle = hci_open_dev(device_id)) < 0) {
         /* handle error */
@@ -1022,7 +1025,7 @@ void *ble_beacon(void *ptr) {
 
         fprintf(stderr, "Hit ctrl-c to stop advertising\n");
 
-        while (!g_done) {
+        while (g_done == false) {
             sleep(1);
         }
 
@@ -1033,11 +1036,11 @@ void *ble_beacon(void *ptr) {
 }
 
 int main(int argc, char **argv) {
-    char ble_buffer[100];            // HCI command for BLE beacon
-    char hex_c[32];                  // buffer that contains the local of beacon
+    char hex_c[MAX_BUFFER];          // buffer that contains the local of beacon
     pthread_t cleanup_push_list_id;  // cleanup_push_list thread ID
     pthread_t ble_beacon_id;         // ble_beacon thread ID
     int i;                           // iterator to loop through push list
+    bool cancelled = false;          // true/false for cancelled scanning
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
@@ -1081,7 +1084,7 @@ int main(int argc, char **argv) {
     }
 
     /* Start scanning for devices */
-    while (1) {
+    while (cancelled == false) {
         start_scanning();
     }
 
