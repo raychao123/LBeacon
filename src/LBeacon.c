@@ -46,6 +46,40 @@
 #include "LBeacon.h"
 
 /*
+ *  uuid_str_to_data, twoc, ctrlc_handler:
+ *
+ *  These three functions are all utility functions of BlueZ, Linux bluetooth
+ *  protocol stack.
+ */
+unsigned int *uuid_str_to_data(char *uuid) {
+    char conv[] = "0123456789ABCDEF";
+    int len = strlen(uuid);
+    unsigned int *data = (unsigned int *)malloc(sizeof(unsigned int) * len);
+
+    if (data == NULL) {
+        /* handle error */
+        fprintf(stderr, "Failed to allocate memory\n");
+        return NULL;
+    }
+
+    unsigned int *dp = data;
+    char *cu = uuid;
+
+    for (; cu < uuid + len; dp++, cu += 2) {
+        *dp = ((strchr(conv, toupper(*cu)) - conv) * 16) +
+              (strchr(conv, toupper(*(cu + 1))) - conv);
+    }
+
+    return data;
+}
+
+unsigned int twoc(int in, int t) {
+    return (in < 0) ? (in + (2 << (t - 1))) : in;
+}
+
+void ctrlc_handler(int s) { g_done = true; }
+
+/*
  *  get_system_time:
  *
  *  Helper function called by is_used_addr to give each user's MAC address the
@@ -482,6 +516,7 @@ static void start_scanning() {
         return;
     }
 
+    /* @todo */
     memset(&cp, 0, sizeof(cp));
     cp.lap[2] = 0x9e;
     cp.lap[1] = 0x8b;
@@ -501,7 +536,7 @@ static void start_scanning() {
     p.fd = socket;
     p.events = POLLIN | POLLERR | POLLHUP;
 
-    while (!cancelled) {
+    while (cancelled == false) {
         p.revents = 0;
 
         /* Poll the Bluetooth device for an event */
@@ -559,7 +594,7 @@ static void start_scanning() {
 }
 
 /*
- *  timeout_cleaner:
+ *  cleanup_push_list:
  *
  *  When bluetooth device's MAC address is pushed by send_to_push_dongle, the
  *  MAC address will be stored in the used list then wait for timeout to be
@@ -574,7 +609,7 @@ static void start_scanning() {
  *
  *  None
  */
-void *timeout_cleaner(void) {
+void *cleanup_push_list(void) {
     int i;  // iterator to loop total number of devices
     int j;  // iterator to loop the length of bluetooth device's MAC address
 
@@ -720,35 +755,40 @@ Config get_config(char *filename) {
             config_message = strstr((char *)line, DELIMITER);
             config_message = config_message + strlen(DELIMITER);
             if (0 == i) {
-                memcpy(config.filepath, config_message, strlen(config_message));
-                config.filepath_len = strlen(config_message);
-            } else if (1 == i) {
-                memcpy(config.filename, config_message, strlen(config_message));
-                config.filename_len = strlen(config_message);
-            } else if (2 == i) {
                 memcpy(config.coordinate_X, config_message,
                        strlen(config_message));
                 config.coordinate_X_len = strlen(config_message);
-            } else if (3 == i) {
+            } else if (1 == i) {
                 memcpy(config.coordinate_Y, config_message,
                        strlen(config_message));
                 config.coordinate_Y_len = strlen(config_message);
-            } else if (4 == i) {
-                memcpy(config.level, config_message, strlen(config_message));
-                config.level_len = strlen(config_message);
-            } else if (5 == i) {
-                memcpy(config.rssi_coverage, config_message,
+            } else if (2 == i) {
+                memcpy(config.coordinate_Z, config_message,
                        strlen(config_message));
-                config.rssi_coverage_len = strlen(config_message);
-            } else if (6 == i) {
+                config.coordinate_Z_len = strlen(config_message);
+            } else if (3 == i) {
+                memcpy(config.filename, config_message, strlen(config_message));
+                config.filename_len = strlen(config_message);
+            } else if (4 == i) {
+                memcpy(config.filepath, config_message, strlen(config_message));
+                config.filepath_len = strlen(config_message);
+            } else if (5 == i) {
                 memcpy(config.num_groups, config_message,
                        strlen(config_message));
                 config.num_groups_len = strlen(config_message);
-            } else if (7 == i) {
+            } else if (6 == i) {
                 memcpy(config.num_messages, config_message,
                        strlen(config_message));
                 config.num_messages_len = strlen(config_message);
+            } else if (7 == i) {
+                memcpy(config.num_push_dongles, config_message,
+                       strlen(config_message));
+                config.num_push_dongles_len = strlen(config_message);
             } else if (8 == i) {
+                memcpy(config.rssi_coverage, config_message,
+                       strlen(config_message));
+                config.rssi_coverage_len = strlen(config_message);
+            } else if (9 == i) {
                 memcpy(config.uuid, config_message, strlen(config_message));
                 config.uuid_len = strlen(config_message);
             }
@@ -758,59 +798,6 @@ Config get_config(char *filename) {
     }
 
     return config;
-}
-
-/*
- *  uuid_str_to_data:
- *
- *  @todo
- *
- *  Parameters:
- *
- *  uuid - @todo
- *
- *  Return value:
- *
- *  data - @todo
- */
-unsigned int *uuid_str_to_data(char *uuid) {
-    char conv[] = "0123456789ABCDEF";
-    int len = strlen(uuid);
-    unsigned int *data = (unsigned int *)malloc(sizeof(unsigned int) * len);
-
-    if (data == NULL) {
-        /* handle error */
-        fprintf(stderr, "Failed to allocate memory\n");
-        return NULL;
-    }
-
-    unsigned int *dp = data;
-    char *cu = uuid;
-
-    for (; cu < uuid + len; dp++, cu += 2) {
-        *dp = ((strchr(conv, toupper(*cu)) - conv) * 16) +
-              (strchr(conv, toupper(*(cu + 1))) - conv);
-    }
-
-    return data;
-}
-
-/*
- *  twoc:
- *
- *  @todo
- *
- *  Parameters:
- *
- *  in - @todo
- *  t - @todo
- *
- *  Return value:
- *
- *  @todo
- */
-unsigned int twoc(int in, int t) {
-    return (in < 0) ? (in + (2 << (t - 1))) : in;
 }
 
 /*
@@ -1005,22 +992,6 @@ int disable_advertising() {
 }
 
 /*
- *  ctrlc_handler:
- *
- *  If the user presses CTRL-C, the global variable g_done will be set to true
- *  and a signal will be thrown to stop running the LBeacon program.
- *
- *  Parameters:
- *
- *  s - @todo
- *
- *  Return value:
- *
- *  None
- */
-void ctrlc_handler(int s) { g_done = true; }
-
-/*
  *  ble_beacon:
  *
  *  @todo
@@ -1062,11 +1033,11 @@ void *ble_beacon(void *ptr) {
 }
 
 int main(int argc, char **argv) {
-    char ble_buffer[100];          // HCI command for BLE beacon
-    char hex_c[32];                // buffer that contains the local of beacon
-    pthread_t timeout_cleaner_id;  // timeout_cleaner thread ID
-    pthread_t ble_beacon_id;       // ble_beacon thread ID
-    int i;                         // iterator to loop through push list
+    char ble_buffer[100];            // HCI command for BLE beacon
+    char hex_c[32];                  // buffer that contains the local of beacon
+    pthread_t cleanup_push_list_id;  // cleanup_push_list thread ID
+    pthread_t ble_beacon_id;         // ble_beacon thread ID
+    int i;                           // iterator to loop through push list
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
@@ -1081,7 +1052,7 @@ int main(int argc, char **argv) {
            g_config.filename_len - 1);
     coordinate_X.f = (float)atof(g_config.coordinate_X);
     coordinate_Y.f = (float)atof(g_config.coordinate_Y);
-    level.f = (float)atof(g_config.level);
+    coordinate_Z.f = (float)atof(g_config.coordinate_Z);
 
     /* Store coordinates of beacon location */
     sprintf(hex_c, "E2C56DB5DFFB48D2B060D0F5%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -1090,10 +1061,10 @@ int main(int argc, char **argv) {
             coordinate_Y.b[2], coordinate_Y.b[3]);
 
     /* Device cleaner */
-    if (pthread_create(&timeout_cleaner_id, NULL, (void *)timeout_cleaner,
+    if (pthread_create(&cleanup_push_list_id, NULL, (void *)cleanup_push_list,
                        NULL)) {
         /* handle error */
-        fprintf(stderr, "Error with timeout_cleaner using pthread_create\n");
+        fprintf(stderr, "Error with cleanup_push_list using pthread_create\n");
         return -1;
     }
 

@@ -46,31 +46,31 @@
 * INCLUDES
 */
 
-#include "bluetooth/bluetooth.h"
-#include "bluetooth/hci.h"
-#include "bluetooth/hci_lib.h"
-#include "ctype.h"
-#include "dirent.h"
-#include "errno.h"
-#include "limits.h"
-#include "netdb.h"
-#include "netinet/in.h"
-#include "obexftp/client.h"
-#include "pthread.h"
-#include "semaphore.h"
-#include "signal.h"
-#include "stdbool.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "sys/ioctl.h"
-#include "sys/poll.h"
-#include "sys/socket.h"
-#include "sys/time.h"
-#include "sys/timeb.h"
-#include "sys/types.h"
-#include "time.h"
-#include "unistd.h"
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+#include <bluetooth/hci_lib.h>
+#include <ctype.h>
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <obexftp/client.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/poll.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/timeb.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 /*
  * CONSTANTS
@@ -183,7 +183,7 @@ union {
 union {
     float f;
     unsigned char b[sizeof(float)];
-} level;
+} coordinate_Z;
 
 /*
  * TYPEDEF STRUCTS
@@ -192,21 +192,23 @@ union {
 typedef struct Config {
     char coordinate_X[MAX_BUFFER];
     char coordinate_Y[MAX_BUFFER];
+    char coordinate_Z[MAX_BUFFER];
     char filename[MAX_BUFFER];
     char filepath[MAX_BUFFER];
-    char level[MAX_BUFFER];
-    char rssi_coverage[MAX_BUFFER];
     char num_groups[MAX_BUFFER];
     char num_messages[MAX_BUFFER];
+    char num_push_dongles[MAX_BUFFER];
+    char rssi_coverage[MAX_BUFFER];
     char uuid[MAX_BUFFER];
     int coordinate_X_len;
     int coordinate_Y_len;
+    int coordinate_Z_len;
     int filename_len;
     int filepath_len;
-    int level_len;
-    int rssi_coverage_len;
     int num_groups_len;
     int num_messages_len;
+    int num_push_dongles_len;
+    int rssi_coverage_len;
     int uuid_len;
 } Config;
 
@@ -230,6 +232,13 @@ typedef struct ThreadAddr {
 
 // Struct for storing information for each thread
 ThreadAddr g_thread_addr[MAX_DEVICES];
+
+/*
+ * UTILITY FUNCTIONS
+ */
+unsigned int *uuid_str_to_data(char *uuid);
+unsigned int twoc(int in, int t);
+void ctrlc_handler(int s);
 
 /*
  * FUNCTIONS
@@ -257,10 +266,20 @@ static void track_devices(bdaddr_t *bdaddr, char *filename);
 static void start_scanning();
 
 // Remove the user's MAC address from pushed list
-void *timeout_cleaner(void);
+void *cleanup_push_list(void);
 
 // Receive filepath of designated message that will be broadcast to users
 char *choose_file(char *messagetosend);
 
 // Read parameter from config file and store in Config struct
 Config get_config(char *filename);
+
+// Determines the advertising capabilities and enables advertising
+int enable_advertising(int advertising_interval, char *advertising_uuid,
+                       int rssi_value);
+
+// Determines the advertising capabilities and disables advertising
+int disable_advertising();
+
+// @todo
+void *ble_beacon(void *ptr);
