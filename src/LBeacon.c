@@ -333,7 +333,7 @@ static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
     printf("\n");
     fflush(NULL);
 
-    // char *ret = choose_file("message1");
+    // char *ret = choose_file("message8");
     // printf("%s\n", ret);
 }
 
@@ -371,7 +371,8 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
             perror("Error opening file");
             return;
         }
-        fputs("LBeacon ID: ########", fd);
+        fputs("LBeacon ID: ", fd);
+        fputs(g_config.uuid, fd);
         fclose(fd);
         g_size_of_file++;
         g_initial_timestamp_of_file = timestamp;
@@ -772,6 +773,9 @@ Config get_config(char *filename) {
                 memcpy(config.num_messages, config_message,
                        strlen(config_message));
                 config.num_messages_len = strlen(config_message);
+            } else if (8 == i) {
+                memcpy(config.uuid, config_message, strlen(config_message));
+                config.uuid_len = strlen(config_message);
             }
             i++;
         }
