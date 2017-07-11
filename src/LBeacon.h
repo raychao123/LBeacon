@@ -100,18 +100,6 @@
 // The optimal number of user devices each PUSH dongle is responsible for
 #define NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE 5
 
-// Number of the Bluetooth dongles used for PUSH function
-#define NUM_OF_PUSH_DONGLES 2
-
-// Device ID of the primary PUSH dongle
-#define PUSH_DONGLE_A 2
-
-// Device ID of the secondary PUSH dongle
-#define PUSH_DONGLE_B 3
-
-// Device ID of the SCAN dongle
-#define SCAN_DONGLE 1
-
 // Transmission range limiter
 #define RSSI_RANGE -60
 
@@ -150,7 +138,7 @@ char *g_filepath;
 unsigned g_initial_timestamp_of_file = 0;
 
 // An array of flags needed to indicate whether each push thread is idle or not
-int g_idle_handler[MAX_DEVICES] = {0};
+int g_idle_handler[MAX_THREADS] = {0};
 
 // The most recent time of the output file used for tracking scanned devices
 unsigned g_most_recent_timestamp_of_file = 0;
@@ -193,6 +181,9 @@ typedef struct Config {
     char coordinate_X[MAX_BUFFER];
     char coordinate_Y[MAX_BUFFER];
     char coordinate_Z[MAX_BUFFER];
+    char dongle_push_A[MAX_BUFFER];
+    char dongle_push_B[MAX_BUFFER];
+    char dongle_scan[MAX_BUFFER];
     char filename[MAX_BUFFER];
     char filepath[MAX_BUFFER];
     char num_groups[MAX_BUFFER];
@@ -203,6 +194,9 @@ typedef struct Config {
     int coordinate_X_len;
     int coordinate_Y_len;
     int coordinate_Z_len;
+    int dongle_push_A_len;
+    int dongle_push_B_len;
+    int dongle_scan_len;
     int filename_len;
     int filepath_len;
     int num_groups_len;
@@ -231,7 +225,7 @@ typedef struct ThreadAddr {
 } ThreadAddr;
 
 // Struct for storing information for each thread
-ThreadAddr g_thread_addr[MAX_DEVICES];
+ThreadAddr g_thread_addr[MAX_THREADS];
 
 /*
  * UTILITY FUNCTIONS

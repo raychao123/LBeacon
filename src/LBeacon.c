@@ -180,10 +180,10 @@ void *send_file(void *ptr) {
 
     /* Split the half of the thread ID to one dongle and the other half to the
      * second dongle. */
-    if (thread_addr->thread_id >= NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE) {
-        dev_id = PUSH_DONGLE_B;
+    if (thread_addr->thread_id < NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE) {
+        dev_id = atoi(g_config.dongle_push_A);
     } else {
-        dev_id = PUSH_DONGLE_A;
+        dev_id = atoi(g_config.dongle_push_B);
     }
 
     /* Open socket and use current time as start time to determine how long it
@@ -194,7 +194,7 @@ void *send_file(void *ptr) {
         perror("Error opening socket");
         pthread_exit(NULL);
     }
-    printf("Thread number %d\n", thread_addr->thread_id);
+    // printf("Thread number %d\n", thread_addr->thread_id);
     long long start = get_system_time();
     addr = (char *)thread_addr->addr;
     channel = obexftp_browse_bt_push(addr);
@@ -213,7 +213,7 @@ void *send_file(void *ptr) {
     cli = obexftp_open(OBEX_TRANS_BLUETOOTH, NULL, NULL, NULL);
     long long end = get_system_time();
 
-    printf("time: %lld ms\n", end - start);
+    // printf("Time it takes to open connection: %lld ms\n", end - start);
     if (cli == NULL) {
         /* handle error */
         fprintf(stderr, "Error opening obexftp client\n");
@@ -295,7 +295,8 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
 
     /* If the MAC address is already in the push list, return. Don't send to
      * push dongle again. */
-    for (i = 0; i < NUM_OF_PUSH_DONGLES; i++) {
+    int num_push_dongles = atoi(g_config.num_push_dongles);
+    for (i = 0; i < num_push_dongles; i++) {
         for (j = 0; j < MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE; j++) {
             if (0 == strcmp(addr, g_pushed_user_addr[i * j + j])) {
                 return;
@@ -310,7 +311,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
     if (-1 != idle && false == is_used_addr(addr)) {
         ThreadAddr *thread_addr = &g_thread_addr[idle];
         g_idle_handler[idle] = 1;
-        printf("%zu\n", sizeof(addr) / sizeof(addr[0]));
+        // printf("%zu\n", sizeof(addr) / sizeof(addr[0]));
         for (i = 0; i < sizeof(addr) / sizeof(addr[0]); i++) {
             g_pushed_user_addr[idle][i] = addr[i];
             thread_addr->addr[i] = addr[i];
@@ -486,7 +487,7 @@ static void start_scanning() {
     int results;
     int i;
 
-    dev_id = SCAN_DONGLE;
+    dev_id = atoi(g_config.dongle_scan);
     // printf("%d", dev_id);
 
     /* Open Bluetooth device */
@@ -768,28 +769,40 @@ Config get_config(char *filename) {
                        strlen(config_message));
                 config.coordinate_Z_len = strlen(config_message);
             } else if (3 == i) {
+                memcpy(config.dongle_push_A, config_message,
+                       strlen(config_message));
+                config.dongle_push_A_len = strlen(config_message);
+            } else if (4 == i) {
+                memcpy(config.dongle_push_B, config_message,
+                       strlen(config_message));
+                config.dongle_push_B_len = strlen(config_message);
+            } else if (5 == i) {
+                memcpy(config.dongle_scan, config_message,
+                       strlen(config_message));
+                config.dongle_scan_len = strlen(config_message);
+            } else if (6 == i) {
                 memcpy(config.filename, config_message, strlen(config_message));
                 config.filename_len = strlen(config_message);
-            } else if (4 == i) {
+            } else if (7 == i) {
                 memcpy(config.filepath, config_message, strlen(config_message));
                 config.filepath_len = strlen(config_message);
-            } else if (5 == i) {
+            } else if (8 == i) {
                 memcpy(config.num_groups, config_message,
                        strlen(config_message));
                 config.num_groups_len = strlen(config_message);
-            } else if (6 == i) {
+            } else if (9 == i) {
                 memcpy(config.num_messages, config_message,
                        strlen(config_message));
                 config.num_messages_len = strlen(config_message);
-            } else if (7 == i) {
+            } else if (10 == i) {
                 memcpy(config.num_push_dongles, config_message,
                        strlen(config_message));
                 config.num_push_dongles_len = strlen(config_message);
-            } else if (8 == i) {
+            } else if (11 == i) {
                 memcpy(config.rssi_coverage, config_message,
                        strlen(config_message));
                 config.rssi_coverage_len = strlen(config_message);
-            } else if (9 == i) {
+            } else if (12 == i) {
                 memcpy(config.uuid, config_message, strlen(config_message));
                 config.uuid_len = strlen(config_message);
             }
@@ -1040,7 +1053,6 @@ int main(int argc, char **argv) {
     pthread_t cleanup_push_list_id;  // cleanup_push_list thread ID
     pthread_t ble_beacon_id;         // ble_beacon thread ID
     int i;                           // iterator to loop through push list
-    bool cancelled = false;          // true/false for cancelled scanning
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
@@ -1084,7 +1096,7 @@ int main(int argc, char **argv) {
     }
 
     /* Start scanning for devices */
-    while (cancelled == false) {
+    while (1) {
         start_scanning();
     }
 
