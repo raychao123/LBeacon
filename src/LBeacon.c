@@ -46,6 +46,28 @@
 #include "LBeacon.h"
 
 /*
+ *  pthread_create_error_message:
+ *
+ *  Print error message when creating a pthread @todo
+ *
+ *  Parameters:
+ *   
+ *  v - return value of the pthread_create function
+ *
+ *  Return value:
+ *
+ *  None
+ */
+void pthread_create_error_message(int v){
+    if(v == 1)
+        perror("[EPERM] Operation not permitted");
+    else if(v == 11)
+        perror("[EAGAIN] Resource temporarily unavailable");
+    else if(v == 22)
+        perror("[EINAL]" Invalid argument);
+}
+
+/*
  *  get_system_time:
  *
  *  Helper function called by is_used_addr to give each user's MAC address the
@@ -255,6 +277,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
     int i;                          // iterator through number of push dongle
     int j;                          // iterator through each block of dongle
     char addr[LEN_OF_MAC_ADDRESS];  // store the MAC address as string
+    int rv;			    // pthread create return value
 
     /* Converts the bluetooth device address to string */
     ba2str(bdaddr, addr);
@@ -282,11 +305,14 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
             thread_addr->addr[i] = addr[i];
         }
         thread_addr->thread_id = idle;
-        if (pthread_create(&g_thread_addr[idle].thread, NULL, send_file,
-                           &g_thread_addr[idle])) {
-            /* handle error */
-            fprintf(stderr, "Error with send_file using pthread_create\n");
-        }
+       	rv = pthread_create(&g_thread_addr[idle].thread, NULL, send_file,
+                           &g_thread_addr[idle]);
+	if(rv != 0){
+            /* error handling */
+	    perror("Error with send_file using pthread_create");
+	    pthread_create_error_message(rv);
+	    /* TODO */
+        }   
     }
 }
 
@@ -1067,6 +1093,7 @@ int main(int argc, char **argv) {
     pthread_t timeout_cleaner_id;  // timeout_cleaner thread ID
     pthread_t ble_beacon_id;       // ble_beacon thread ID
     int i;                         // iterator to loop through push list
+    int rv;			   // pthread create return value
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
@@ -1090,18 +1117,22 @@ int main(int argc, char **argv) {
             coordinate_Y.b[2], coordinate_Y.b[3]);
 
     /* Device cleaner */
-    if (pthread_create(&timeout_cleaner_id, NULL, (void *)timeout_cleaner,
-                       NULL)) {
-        /* handle error */
-        fprintf(stderr, "Error with timeout_cleaner using pthread_create\n");
-        return -1;
+    rv = pthread_create(&timeout_cleaner_id, NULL, (void *)timeout_cleaner,
+                       NULL);
+    if(rv != 0){
+        /* error handling */
+        perror("Error with timeout_cleaner using pthread_create");
+	pthread_create_error_message(rv);
+	pthread_exit(NULL);
     }
 
     /* Enable message advertising to BLE bluetooth devices */
-    if (pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c)) {
-        /* handle error */
-        fprintf(stderr, "Error with ble_beacon using pthread_create\n");
-        return -1;
+    rv = pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c);
+    if(rv != 0) {
+        /* error handling */
+        perror("Error with ble_beacon using pthread_create");
+	pthread_create_error_message(rv);
+	pthread_exit(NULL);
     }
 
     /* Reset the device queue */
