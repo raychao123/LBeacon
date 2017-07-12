@@ -245,7 +245,7 @@ void *send_file(void *ptr) {
 /*
  *  send_to_push_dongle:
  *
- *  For each new MAC address of a discovered bluetooth device, this function adds
+ *  For each new MAC address of a scanned bluetooth device, the function adds
  *  the MAC address to an array of ThreadAddr struct that will give it a thread
  *  ID and sends the MAC address to send_file. The function only adds a MAC
  *  address if it isn't in the push list and does not have a thread ID. If the
