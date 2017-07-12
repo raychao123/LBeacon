@@ -64,7 +64,7 @@ void pthread_create_error_message(int v){
     else if(v == 11)
         perror("[EAGAIN] Resource temporarily unavailable");
     else if(v == 22)
-        perror("[EINAL]" Invalid argument);
+        perror("[EINAL] Invalid argument");
 }
 
 /*
