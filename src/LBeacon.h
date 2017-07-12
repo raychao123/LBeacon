@@ -79,7 +79,7 @@
 // The filepath of the config file
 #define CONFIG_FILENAME "../config/config.conf"
 
-// Read the parameter after "=" from config file
+// The parameter marking the start of a config file line
 #define DELIMITER "="
 
 // Length of Bluetooth MAC addr
@@ -88,7 +88,7 @@
 // Maximum number of characters in each line of config file
 #define MAX_BUFFER 64
 
-// Maximum number of devices that all PUSH dongles can handle
+// Maximum number of devices to be handled by all PUSH dongles
 #define MAX_DEVICES 18
 
 // Maximum number of devices that a PUSH dongle can handle
@@ -97,7 +97,7 @@
 // Maximum number of the Bluetooth Object PUSH threads
 #define MAX_THREADS 18
 
-// The optimal number of user devices each PUSH dongle is responsible for
+// The optimal number of user devices handled by each PUSH dongle
 #define NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE 5
 
 // Number of the Bluetooth dongles used for PUSH function
@@ -115,23 +115,23 @@
 // Transmission range limiter
 #define RSSI_RANGE -60
 
-// The length of interval time, in milliseconds, a user object is pushed
+// The length of time interval, in milliseconds, an object is pushed to a user device
 #define TIMEOUT 20000
 
 // Command opcode pack/unpack from HCI library
 #define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 
-// BlueZ bluetooth protocol: flags
+// BlueZ bluetooth extended inquiry response protocol: flags
 #define EIR_FLAGS 0X01
 
-// BlueZ bluetooth protocol: shorten local name
+// BlueZ bluetooth extended inquiry response protocol: shorten local name
 #define EIR_NAME_SHORT 0x08
 
-// BlueZ bluetooth protocol: complete local name
+// BlueZ bluetooth extended inquiry response protocol: complete local name
 #define EIR_NAME_COMPLETE 0x09
 
-// BlueZ bluetooth protocol:: Manufacturer Specific Data
-#define EIR_MANUFACTURE_SPECIFIC 0xFF
+// BlueZ bluetooth extended inquiry response protocol:: Manufacturer Specific Data
+#define EIR_MANUFACTURE_SPECIFIC_DATA 0xFF
 
 /*
  * GLOBAL VARIABLES
@@ -149,16 +149,16 @@ char *g_filepath;
 // The first timestamp of the output file used for tracking scanned devices
 unsigned g_initial_timestamp_of_file = 0;
 
-// An array of flags needed to indicate whether each push thread is idle or not
+// An array of flags needed to indicate whether each push thread is idle
 int g_idle_handler[MAX_DEVICES] = {0};
 
 // The most recent time of the output file used for tracking scanned devices
 unsigned g_most_recent_timestamp_of_file = 0;
 
-// An array used for handling pushed users and bluetooth device address
+// An array used for storing pushed users and bluetooth device addresses
 char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
-// An array for saving the MAC address so it can be stored into database
+// An array for saving the MAC addresses so that it can be stored into database
 char g_saved_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
 // Number of lines in the output file used for tracking scanned devices
@@ -198,6 +198,7 @@ typedef struct Config {
     char rssi_coverage[MAX_BUFFER];
     char num_groups[MAX_BUFFER];
     char num_messages[MAX_BUFFER];
+    char uuid[MAX_BUFFER];
     int coordinate_X_len;
     int coordinate_Y_len;
     int filename_len;
@@ -206,9 +207,10 @@ typedef struct Config {
     int rssi_coverage_len;
     int num_groups_len;
     int num_messages_len;
+    int uuid_len;
 } Config;
 
-// Struct for storing config information from the inputted file
+// Struct for storing config information from the input file
 Config g_config;
 
 typedef struct PushList {
