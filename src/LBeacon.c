@@ -147,6 +147,8 @@ void *send_file(void *ptr) {
     int socket;
     int i;
     int ret;
+    long long start_time;
+    long long end_time;
 
     /*
      *  Split one half of the device IDs to one dongle and the other half to
@@ -169,7 +171,7 @@ void *send_file(void *ptr) {
         pthread_exit(NULL);
     }
     printf("Thread number %d\n", thread_addr->thread_id);
-    long long start = get_system_time();
+    start_time = get_system_time();
     addr = (char *)thread_addr->addr;
     channel = obexftp_browse_bt_push(addr);
 
@@ -185,9 +187,9 @@ void *send_file(void *ptr) {
 
     /* Open connection */
     cli = obexftp_open(OBEX_TRANS_BLUETOOTH, NULL, NULL, NULL);
-    long long end = get_system_time();
+    end_time = get_system_time();
 
-    printf("time: %lld ms\n", end - start);
+    printf("time: %lld ms\n", end_time - start_time);
     if (cli == NULL) {
         /* error handling */
         perror("Error opening obexftp client\n");
@@ -260,7 +262,7 @@ void *send_file(void *ptr) {
  *  None
  */
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
-    int idle = -1;                  // used to make sure only max of 18 threads
+    int idle = -1;                  // used to make sure there are at most 18 threads
     int i;                          // iterator through number of push dongle
     int j;                          // iterator through each block of dongle
     char addr[LEN_OF_MAC_ADDRESS];  // store the MAC address as string
@@ -269,8 +271,8 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
     ba2str(bdaddr, addr);
 
     /*
-     *  If the MAC address is already in the push list, return. Don't send to
-     *  push dongle again.
+     *  If the MAC address is already in the push list, return. Don't send the MAC address 
+     *  to push dongle again.
      */
     for (i = 0; i < NUM_OF_PUSH_DONGLES; i++) {
         for (j = 0; j < MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE; j++) {
@@ -467,6 +469,7 @@ static void start_scanning() {
     int len;
     int results;
     int i;
+    
 
     dev_id = SCAN_DONGLE;
     // printf("%d", dev_id);
@@ -921,7 +924,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 
     segment_length = 1;
     adv_data_cp.data[adv_data_cp.length + segment_length] =
-        htobs(EIR_MANUFACTURE_SPECIFIC);
+        htobs(EIR_MANUFACTURE_SPECIFIC_DATA);
     segment_length++;
     adv_data_cp.data[adv_data_cp.length + segment_length] = htobs(0x4C);
     segment_length++;
