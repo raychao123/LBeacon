@@ -22,14 +22,14 @@
  *
  * Abstract:
  *
- *      BeDIPS uses LBeacons to deliver to users' devices 3D coordinates and
- *      textual descriptions of their locations. Basically, a LBeacon is an
- *      inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
+ *      BeDIPS uses LBeacons to deliver 3D coordinates and textual
+ *      descriptions of their locations to users' devices. Basically, a LBeacon
+ *      is an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
  *      location description of every LBeacon are retrieved from BeDIS
  *      (Building/environment Data and Information System) and stored locally
  *      during deployment and maintenance times. Once initialized, each LBeacon
  *      broadcasts its coordinates and location description to Bluetooth
- *      enabled devices within its coverage area.
+ *      enabled user devices within its coverage area.
  *
  * Authors:
  *
@@ -39,7 +39,6 @@
  *      Han Hu, hhu14@illinois.edu
  *      Jeffrey Lin, lin.jeff03@gmail.com
  *      Howard Hsu, haohsu0823@gmail.com
- *
  */
 
 /*
@@ -71,6 +70,9 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include "LinkedList.h"
+#include "Queue.h"
+#include "Utilities.h"
 
 /*
  * CONSTANTS
@@ -82,23 +84,11 @@
 // Read the parameter after "=" from config file
 #define DELIMITER "="
 
-// Length of Bluetooth MAC addr
+// Length of Bluetooth MAC address
 #define LEN_OF_MAC_ADDRESS 18
 
 // Maximum number of characters in each line of config file
 #define MAX_BUFFER 64
-
-// Maximum number of devices that all PUSH dongles can handle
-#define MAX_DEVICES 18
-
-// Maximum number of devices that a PUSH dongle can handle
-#define MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
-
-// Maximum number of the Bluetooth Object PUSH threads
-#define MAX_THREADS 18
-
-// The optimal number of user devices each PUSH dongle is responsible for
-#define NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE 5
 
 // Transmission range limiter
 #define RSSI_RANGE -60
@@ -125,29 +115,14 @@
  * GLOBAL VARIABLES
  */
 
-// An array used for tracking MAC addresses of scanned devices
-char g_addr[LEN_OF_MAC_ADDRESS] = {0};
-
-// A flag that is used to check if CTRL-C is pressed
-bool g_done = false;
-
 // The path of object push file
 char *g_filepath;
 
 // The first timestamp of the output file used for tracking scanned devices
 unsigned g_initial_timestamp_of_file = 0;
 
-// An array of flags needed to indicate whether each push thread is idle or not
-int g_idle_handler[MAX_THREADS] = {0};
-
 // The most recent time of the output file used for tracking scanned devices
 unsigned g_most_recent_timestamp_of_file = 0;
-
-// An array used for handling pushed users and bluetooth device address
-char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
-
-// An array for saving the MAC address so it can be stored into database
-char g_saved_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
 // Number of lines in the output file used for tracking scanned devices
 int g_size_of_file = 0;
@@ -181,11 +156,9 @@ typedef struct Config {
     char coordinate_X[MAX_BUFFER];
     char coordinate_Y[MAX_BUFFER];
     char coordinate_Z[MAX_BUFFER];
-    char dongle_push_A[MAX_BUFFER];
-    char dongle_push_B[MAX_BUFFER];
-    char dongle_scan[MAX_BUFFER];
     char filename[MAX_BUFFER];
     char filepath[MAX_BUFFER];
+    char max_devices[MAX_BUFFER];
     char num_groups[MAX_BUFFER];
     char num_messages[MAX_BUFFER];
     char num_push_dongles[MAX_BUFFER];
@@ -194,11 +167,9 @@ typedef struct Config {
     int coordinate_X_len;
     int coordinate_Y_len;
     int coordinate_Z_len;
-    int dongle_push_A_len;
-    int dongle_push_B_len;
-    int dongle_scan_len;
     int filename_len;
     int filepath_len;
+    int max_devices_len;
     int num_groups_len;
     int num_messages_len;
     int num_push_dongles_len;
@@ -209,31 +180,14 @@ typedef struct Config {
 // Struct for storing config information from the inputted file
 Config g_config;
 
-typedef struct PushList {
-    long long first_appearance_time[MAX_DEVICES];
-    char discovered_device_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS];
-    bool is_used_device[MAX_DEVICES];
-} PushList;
+// ARRAY
+typedef struct ThreadStatus {
+    char scanned_mac_addr[LEN_OF_MAC_ADDRESS];
+    int idle;
+    bool is_waiting_to_send;
+} ThreadStatus;
 
-// Struct for storing information on users' devices discovered by each becon
-PushList g_push_list;
-
-typedef struct ThreadAddr {
-    pthread_t thread;
-    int thread_id;
-    char addr[LEN_OF_MAC_ADDRESS];
-} ThreadAddr;
-
-// Struct for storing information for each thread
-ThreadAddr g_thread_addr[MAX_THREADS];
-
-/*
- * UTILITY FUNCTIONS
- */
-
-unsigned int *uuid_str_to_data(char *uuid);
-unsigned int twoc(int in, int t);
-void ctrlc_handler(int s);
+ThreadStatus *g_idle_handler;
 
 /*
  * FUNCTIONS
@@ -246,7 +200,10 @@ long long get_system_time();
 bool is_used_addr(char addr[]);
 
 // Send the push message to the user's device by a working asynchronous thread
-void *send_file(void *ptr);
+void *send_file();
+
+// @todo
+void *queue_to_array();
 
 // Send scanned user's MAC address to push dongle
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi);
@@ -278,3 +235,4 @@ int disable_advertising();
 
 // @todo
 void *ble_beacon(void *ptr);
+void print_array();
