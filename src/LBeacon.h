@@ -82,7 +82,7 @@
 #define DELIMITER "="
 
 // Length of Bluetooth MAC addr
-#define LENGTH_OF_MAC_ADDRESS 18
+#define LEN_OF_MAC_ADDRESS 18
 
 // Maximum number of characters in each line of config file
 #define MAX_BUFFER 64
@@ -105,7 +105,7 @@
 // Device ID of the primary PUSH dongle
 #define PUSH_DONGLE_A 2
 
-// Device ID of the secondar
+// Device ID of the secondary PUSH dongle
 #define PUSH_DONGLE_B 3
 
 // Device ID of the SCAN dongle
@@ -118,7 +118,7 @@
 #define TIMEOUT 20000
 
 // Command opcode pack/unpack from HCI library
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 
 // BlueZ bluetooth protocol: flags
 #define EIR_FLAGS 0X01
@@ -137,7 +137,7 @@
  */
 
 // An array used for tracking MAC addresses of scanned devices
-char g_addr[LENGTH_OF_MAC_ADDRESS] = {0};
+char g_addr[LEN_OF_MAC_ADDRESS] = {0};
 
 // A flag that is used to check if CTRL-C is pressed
 bool g_done = false;
@@ -155,10 +155,10 @@ int g_idle_handler[MAX_DEVICES] = {0};
 unsigned g_most_recent_timestamp_of_file = 0;
 
 // An array used for handling pushed users and bluetooth device address
-char g_pushed_user_addr[MAX_DEVICES][LENGTH_OF_MAC_ADDRESS] = {0};
+char g_pushed_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
 // An array for saving the MAC address so it can be stored into database
-char g_saved_user_addr[MAX_DEVICES][LENGTH_OF_MAC_ADDRESS] = {0};
+char g_saved_user_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS] = {0};
 
 // Number of lines in the output file used for tracking scanned devices
 int g_size_of_file = 0;
@@ -214,7 +214,7 @@ Config g_config;
 
 typedef struct PushList {
     long long first_appearance_time[MAX_DEVICES];
-    char discovered_device_addr[MAX_DEVICES][LENGTH_OF_MAC_ADDRESS];
+    char discovered_device_addr[MAX_DEVICES][LEN_OF_MAC_ADDRESS];
     bool is_used_device[MAX_DEVICES];
 } PushList;
 
@@ -224,7 +224,7 @@ PushList g_push_list;
 typedef struct ThreadAddr {
     pthread_t thread;
     int thread_id;
-    char addr[LENGTH_OF_MAC_ADDRESS];
+    char addr[LEN_OF_MAC_ADDRESS];
 } ThreadAddr;
 
 // Struct for storing information for each thread
