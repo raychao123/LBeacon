@@ -98,6 +98,7 @@ bool is_used_addr(char addr[]) {
         }
         temp = temp->next;
     }
+    // printf("not in linked list: %s\n", &addr[0]);
     return false;
 }
 
@@ -116,12 +117,12 @@ bool is_used_addr(char addr[]) {
  *
  *  None
  */
-void *send_file() {
+void *send_file(void *arg) {
     obexftp_client_t *cli = NULL;
     char *addr = NULL;
     char *filename;
     int channel = -1;
-    int dev_id;
+    int dev_id = 0;
     int socket;
     int i;  // iterate thru to see each send_file thread status
     int j;
@@ -133,22 +134,28 @@ void *send_file() {
     int max_devices = atoi(g_config.max_devices);
     int max_devices_per_dongle = max_devices / num_push_dongles;
 
-    printf("send_file thread id = %d\n", pthread_self());
+    int tid = (int)arg;
 
     while (cancelled == false) {
         for (i = 0; i < max_devices; i++) {
-            if (g_idle_handler[i].is_waiting_to_send == true) {
+            if (i == tid && g_idle_handler[i].is_waiting_to_send == true) {
                 /* Split the half of the thread ID to one dongle and the other
                  * half to the second dongle. */
                 for (j = 0; j < num_push_dongles; j++) {
                     for (k = 0; k < max_devices_per_dongle; k++) {
-                        dev_id = j + 2;
+                        if (tid == j * max_devices_per_dongle + k) {
+                            dev_id = j + 1;
+                        }
                     }
                 }
-
                 /* Open socket and use current time as start time to determine
                  * how long it takes to send the file to the bluetooth device.
                  */
+
+                // printf("send_file thread id = %d mac addr = %s\n", tid,
+                // &g_idle_handler[i].scanned_mac_addr[0]);
+                // print_array();
+
                 socket = hci_open_dev(dev_id);
                 if (0 > dev_id || 0 > socket) {
                     /* handle error */
@@ -167,6 +174,7 @@ void *send_file() {
 
                 /* Extract basename from filepath */
                 filename = strrchr(g_filepath, '/');
+                filename[g_config.filename_len] = '\0';
                 printf("%s\n", filename);
                 if (!filename) {
                     filename = g_filepath;
@@ -296,7 +304,9 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
 
     ba2str(bdaddr, addr);
 
+    // printf("scanned: %s\n", &addr[0]);
     if (is_used_addr(addr) == false) {
+        // printf("need to add to linked list: %s\n", &addr[0]);
         PushList data;
         data.initial_scanned_time = get_system_time();
         for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
@@ -304,7 +314,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
         }
         insertFirst(data);
         enqueue(addr);
-        // printList();
+        printList();
         print();
     }
 }
@@ -468,9 +478,6 @@ static void start_scanning() {
     int results;
     int i;
 
-    dev_id = 1;
-    // printf("%d", dev_id);
-
     /* Open Bluetooth device */
     socket = hci_open_dev(dev_id);
     if (0 > dev_id || 0 > socket) {
@@ -541,7 +548,7 @@ static void start_scanning() {
                 case EVT_INQUIRY_RESULT: {
                     for (i = 0; i < results; i++) {
                         info = (void *)ptr + (sizeof(*info) * i) + 1;
-                        print_RSSI_value(&info->bdaddr, 0, 0);
+                        // print_RSSI_value(&info->bdaddr, 0, 0);
                         track_devices(&info->bdaddr, "output.txt");
                     }
                 } break;
@@ -1091,7 +1098,7 @@ int main(int argc, char **argv) {
     /* todo */
     pthread_t send_file_id[max_devices];
     for (i = 0; i < max_devices; i++) {
-        pthread_create(&send_file_id[i], NULL, (void *)send_file, NULL);
+        pthread_create(&send_file_id[i], NULL, (void *)send_file, (void *)i);
     }
 
     /* Start scanning for devices */

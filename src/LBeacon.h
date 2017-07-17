@@ -199,26 +199,29 @@ long long get_system_time();
 // Check whether the user's address is being used or can be pushed to again
 bool is_used_addr(char addr[]);
 
-// Send the push message to the user's device by a working asynchronous thread
-void *send_file();
-
-// @todo
-void *queue_to_array();
+// Scan continuously for bluetooth devices under the beacon
+static void start_scanning();
 
 // Send scanned user's MAC address to push dongle
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi);
 
-// Print the result of RSSI value for scanned MAC address
-static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi);
+// @todo
+void *queue_to_array();
 
-// Track scanned MAC addresses and store information in an output file
-static void track_devices(bdaddr_t *bdaddr, char *filename);
-
-// Scan continuously for bluetooth devices under the beacon
-static void start_scanning();
+// Send the push message to the user's device by a working asynchronous thread
+void *send_file(void *arg);
 
 // Remove the user's MAC address from pushed list
 void *cleanup_push_list(void);
+
+// Print the result of RSSI value for scanned MAC address
+static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi);
+
+// @todo
+void print_array();
+
+// Track scanned MAC addresses and store information in an output file
+static void track_devices(bdaddr_t *bdaddr, char *filename);
 
 // Receive filepath of designated message that will be broadcast to users
 char *choose_file(char *messagetosend);
@@ -235,4 +238,3 @@ int disable_advertising();
 
 // @todo
 void *ble_beacon(void *ptr);
-void print_array();
