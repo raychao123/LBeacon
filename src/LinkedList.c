@@ -13,7 +13,10 @@
  *
  * File Description:
  *
- *      @todo
+ *      This file contains the implementation of a linked list data structure.
+ *      It has the feature of inserting a node to the front of the linked list
+ *      and deleting a specific node. It can also check the length of the linked
+ *      list and print all the information stored.
  *
  * File Name:
  *
@@ -42,24 +45,26 @@
 
 #include "LinkedList.h"
 
+// Pointer to the LinkedListNode at the head of the linked list
 LinkedListNode *ll_head = NULL;
+
+// Pointer to current LinkedListNode of the linked list
 LinkedListNode *ll_current = NULL;
 
-// display the list
-void printList() {
-    struct LinkedListNode *ptr = ll_head;
-
-    // start from the beginning
-    printf("%s", "Linked List: ");
-    while (ptr != NULL) {
-        printf("%s ", &ptr->data.scanned_mac_addr[0]);
-        ptr = ptr->next;
-    }
-    printf("\n");
-}
-
-// insert link at the first location
-void insertFirst(PushList data) {
+/*
+ *  insert_first:
+ *
+ *  @todo
+ *
+ *  Parameters:
+ *
+ *  data - @todo
+ *
+ *  Return value:
+ *
+ *  None
+ */
+void insert_first(PushList data) {
     int i;
     // create a link
     struct LinkedListNode *link =
@@ -77,8 +82,20 @@ void insertFirst(PushList data) {
     ll_head = link;
 }
 
-// delete a link with given key
-void deleteNode(PushList data) {
+/*
+ *  delete_node:
+ *
+ *  @todo
+ *
+ *  Parameters:
+ *
+ *  data - @todo
+ *
+ *  Return value:
+ *
+ *  None
+ */
+void delete_node(PushList data) {
     // start from the first link
     struct LinkedListNode *ll_current = ll_head;
     struct LinkedListNode *ll_previous = NULL;
@@ -114,9 +131,19 @@ void deleteNode(PushList data) {
     return;
 }
 
-// is list empty
-bool isEmpty() { return ll_head == NULL; }
-
+/*
+ *  length:
+ *
+ *  @todo
+ *
+ *  Parameters:
+ *
+ *  None
+ *
+ *  Return value:
+ *
+ *  length - @todo
+ */
 int length() {
     int length = 0;
     struct LinkedListNode *ll_current;
@@ -127,4 +154,29 @@ int length() {
     }
 
     return length;
+}
+
+/*
+ *  print_linked_list:
+ *
+ *  @todo
+ *
+ *  Parameters:
+ *
+ *  None
+ *
+ *  Return value:
+ *
+ *  None
+ */
+void print_linked_list() {
+    struct LinkedListNode *ptr = ll_head;
+
+    // start from the beginning
+    printf("%s", "Linked List: ");
+    while (ptr != NULL) {
+        printf("%s ", &ptr->data.scanned_mac_addr[0]);
+        ptr = ptr->next;
+    }
+    printf("\n");
 }

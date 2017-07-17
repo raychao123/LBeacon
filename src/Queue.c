@@ -13,7 +13,11 @@
  *
  * File Description:
  *
- *      @todo
+ *      This file contains the implementation of a queue data structure. It has
+ *      the feature of enqueueing a node to the front of the queue and
+ *      dequeueing a node to the end of the queue. It can also peek at the
+ *      node in the front of the queue and print a list of all the nodes in the
+ *      queue.
  *
  * File Name:
  *
@@ -42,10 +46,25 @@
 
 #include "Queue.h"
 
+// Pointer to the QueueNode at the head of the queue
 QueueNode *q_head = NULL;
+
+// Pointer to the QueueNode at the tail of the queue
 QueueNode *q_tail = NULL;
 
-// Add data to the end of the queue
+/*
+ *  enqueue:
+ *
+ *  Add data to the end of the queue. @todo
+ *
+ *  Parameters:
+ *
+ *  data - @todo
+ *
+ *  Return value:
+ *
+ *  None
+ */
 void enqueue(char data[]) {
     int i;
     struct QueueNode *temp =
@@ -63,11 +82,22 @@ void enqueue(char data[]) {
     free(temp);
 }
 
-// Remove data from the head of the queue
+/*
+ *  dequeue:
+ *
+ *  Remove data from the head of the queue. @todo
+ *
+ *  Parameters:
+ *
+ *  None
+ *
+ *  Return value:
+ *
+ *  None
+ */
 void dequeue() {
     struct QueueNode *temp = q_head;
     if (q_head == NULL) {
-        // printf("Queue is empty for dequeue\n");
         return;
     }
     if (q_head == q_tail) {
@@ -78,18 +108,41 @@ void dequeue() {
     free(temp);
 }
 
-// Peek at the head of the queue
+/*
+ *  peek:
+ *
+ *  Peek at the head of the queue. @todo
+ *
+ *  Parameters:
+ *
+ *  None
+ *
+ *  Return value:
+ *
+ *  return_value - @todo
+ */
 char *peek() {
     if (q_head == NULL) {
-        // printf("Queue is empty for peek\n");
         return NULL;
     }
-    char *ret = &q_head->data[0];
-    return ret;
+    char *return_value = &q_head->data[0];
+    return return_value;
 }
 
-// Print all the items in the queue
-void print() {
+/*
+ *  print_queue:
+ *
+ *  Print all the items in the queue. @todo
+ *
+ *  Parameters:
+ *
+ *  None
+ *
+ *  Return value:
+ *
+ *  None
+ */
+void print_queue() {
     struct QueueNode *temp = q_head;
     printf("%s", "Queue: ");
     while (temp != NULL) {

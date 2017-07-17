@@ -94,7 +94,7 @@
 #define RSSI_RANGE -60
 
 // The length of interval time, in milliseconds, a user object is pushed
-#define TIMEOUT 20000
+#define TIMEOUT 60000
 
 // Command opcode pack/unpack from HCI library
 #define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
@@ -180,13 +180,13 @@ typedef struct Config {
 // Struct for storing config information from the inputted file
 Config g_config;
 
-// ARRAY
 typedef struct ThreadStatus {
     char scanned_mac_addr[LEN_OF_MAC_ADDRESS];
     int idle;
     bool is_waiting_to_send;
 } ThreadStatus;
 
+// Struct for storing the status of each thread
 ThreadStatus *g_idle_handler;
 
 /*
@@ -216,9 +216,6 @@ void *cleanup_push_list(void);
 
 // Print the result of RSSI value for scanned MAC address
 static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi);
-
-// @todo
-void print_array();
 
 // Track scanned MAC addresses and store information in an output file
 static void track_devices(bdaddr_t *bdaddr, char *filename);

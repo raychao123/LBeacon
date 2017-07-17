@@ -13,7 +13,8 @@
  *
  * File Description:
  *
- *      @todo
+ *      This is the header file containing the function declarations and
+ *      variables used in the Queue.c file.
  *
  * File Name:
  *
@@ -43,24 +44,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// QUEUE
+// Struct for each node in the queue; data is the MAC address
 typedef struct QueueNode {
-    char data[18];  // MAC address
+    char data[18];
     struct QueueNode *next;
 } QueueNode;
 
-// Two global variables to store address of front and rear nodes
+// Pointer to the QueueNode at the head of the queue
 extern QueueNode *q_head;
+
+// Pointer to the QueueNode at the tail of the queue
 extern QueueNode *q_tail;
 
-// Add data to the end of the queue
+// Add QueueNode to the end of the queue
 void enqueue(char data[]);
 
-// Remove data from the front of the queue
+// Remove QueueNode from the front of the queue
 void dequeue();
 
 // Peek at the head of the queue
 char *peek();
 
 // Print all the items in the queue
-void print();
+void print_queue();

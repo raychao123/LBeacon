@@ -13,7 +13,8 @@
  *
  * File Description:
  *
- *      @todo
+ *      This is the header file containing the function declarations and
+ *      variables used in the LinkedList.c file.
  *
  * File Name:
  *
@@ -45,22 +46,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-// LINKED LIST
+// Struct for storing scanned timestamp and MAC address of bluetooth device
 typedef struct PushList {
     long long initial_scanned_time;
     char scanned_mac_addr[18];
 } PushList;
 
+// Struct for each node in the linked list; data is a PushList struct
 typedef struct LinkedListNode {
     PushList data;
     struct LinkedListNode *next;
 } LinkedListNode;
 
+// Pointer to the LinkedListNode at the head of the linked list
 extern LinkedListNode *ll_head;
+
+// Pointer to current LinkedListNode of the linked list
 extern LinkedListNode *ll_current;
 
-void printList();
-void insertFirst(PushList data);
-void deleteNode(PushList data);
-bool isEmpty();
+// Add LinkedListNode to the front of the linked list
+void insert_first(PushList data);
+
+// Remove selected LinkedListNode from the linked list
+void delete_node(PushList data);
+
+// Get the length of the linked list
 int length();
+
+// Print all the items in the linked list
+void print_linked_list();

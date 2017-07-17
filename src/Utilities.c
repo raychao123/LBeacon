@@ -13,7 +13,8 @@
  *
  * File Description:
  *
- *      @todo
+ *      This file contains various utilities functions included in BlueZ, the
+ *      official Linux Bluetooth protocol stack.
  *
  * File Name:
  *
@@ -42,8 +43,22 @@
 
 #include "Utilities.h"
 
+// A flag that is used to check if CTRL-C is pressed
 bool g_done = false;
 
+/*
+ *  uuid_str_to_data:
+ *
+ *  @todo
+ *
+ *  Parameters:
+ *
+ *  uuid - @todo
+ *
+ *  Return value:
+ *
+ *  data - @todo
+ */
 unsigned int *uuid_str_to_data(char *uuid) {
     char conv[] = "0123456789ABCDEF";
     int len = strlen(uuid);
@@ -66,8 +81,35 @@ unsigned int *uuid_str_to_data(char *uuid) {
     return data;
 }
 
+/*
+ *  twoc:
+ *
+ *  @todo
+ *
+ *  Parameters:
+ *
+ *  in - @todo
+ *  t - @todo
+ *
+ *  Return value:
+ *
+ *  data - @todo
+ */
 unsigned int twoc(int in, int t) {
     return (in < 0) ? (in + (2 << (t - 1))) : in;
 }
 
+/*
+ *  ctrlc_handler:
+ *
+ *  @todo
+ *
+ *  Parameters:
+ *
+ *  s - @todo
+ *
+ *  Return value:
+ *
+ *  None
+ */
 void ctrlc_handler(int s) { g_done = true; }

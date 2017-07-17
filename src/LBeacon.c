@@ -98,7 +98,6 @@ bool is_used_addr(char addr[]) {
         }
         temp = temp->next;
     }
-    // printf("not in linked list: %s\n", &addr[0]);
     return false;
 }
 
@@ -124,7 +123,7 @@ void *send_file(void *arg) {
     int channel = -1;
     int dev_id = 0;
     int socket;
-    int i;  // iterate thru to see each send_file thread status
+    int i;
     int j;
     int k;
     int ret;
@@ -148,14 +147,10 @@ void *send_file(void *arg) {
                         }
                     }
                 }
+
                 /* Open socket and use current time as start time to determine
                  * how long it takes to send the file to the bluetooth device.
                  */
-
-                // printf("send_file thread id = %d mac addr = %s\n", tid,
-                // &g_idle_handler[i].scanned_mac_addr[0]);
-                // print_array();
-
                 socket = hci_open_dev(dev_id);
                 if (0 > dev_id || 0 > socket) {
                     /* handle error */
@@ -268,7 +263,6 @@ void *queue_to_array() {
         for (i = 0; i < max_devices; i++) {
             char *addr = peek();
             if (g_idle_handler[i].idle == -1 && addr != NULL) {
-                print_array();
                 for (j = 0; j < 18; j++) {
                     g_idle_handler[i].scanned_mac_addr[j] = addr[j];
                 }
@@ -312,10 +306,10 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
         for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
             data.scanned_mac_addr[i] = addr[i];
         }
-        insertFirst(data);
+        insert_first(data);
         enqueue(addr);
-        printList();
-        print();
+        print_linked_list();
+        print_queue();
     }
 }
 
@@ -372,10 +366,10 @@ static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
 static void track_devices(bdaddr_t *bdaddr, char *filename) {
     char addr[LEN_OF_MAC_ADDRESS];
     char ll2c[10];  // used for converting long long to char[]
+    unsigned timestamp = (unsigned)time(NULL);
 
     /* Get current timestamp when tracking bluetooth devices. If file is empty,
      * create new file with LBeacon ID. */
-    unsigned timestamp = (unsigned)time(NULL);
     sprintf(ll2c, "%u", timestamp);
     if (0 == g_size_of_file) {
         FILE *fd = fopen(filename, "w+");  // w+ overwrites the file
@@ -396,17 +390,21 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
      * create new line. Double check that MAC address is not already added at a
      * given timestamp using strstr. */
     ba2str(bdaddr, addr);
+
+    FILE *output;
+    char buffer[1024];
+    output = fopen(filename, "a+");
+
+    if (output == NULL) {
+        /* handle error */
+        perror("Error opening file");
+        return;
+    }
+
+    while (fgets(buffer, sizeof(buffer), output) != NULL) {
+    }
+
     if (timestamp != g_most_recent_timestamp_of_file) {
-        FILE *output;
-        char buffer[1024];
-        output = fopen(filename, "a+");
-        if (output == NULL) {
-            /* handle error */
-            perror("Error opening file");
-            return;
-        }
-        while (fgets(buffer, sizeof(buffer), output) != NULL) {
-        }
         fputs("\n", output);
         fputs(ll2c, output);
         fputs(" - ", output);
@@ -416,16 +414,6 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         g_most_recent_timestamp_of_file = timestamp;
         g_size_of_file++;
     } else {
-        FILE *output;
-        char buffer[1024];
-        output = fopen(filename, "a+");
-        if (output == NULL) {
-            /* handle error */
-            perror("Error opening file");
-            return;
-        }
-        while (fgets(buffer, sizeof(buffer), output) != NULL) {
-        }
         if (strstr(buffer, addr) == NULL) {
             fputs(", ", output);
             fputs(addr, output);
@@ -433,15 +421,12 @@ static void track_devices(bdaddr_t *bdaddr, char *filename) {
         fclose(output);
     }
 
-    /* Send file to gateway if exceeds 1000 lines or reaches 6 hours. */
-    /*
     unsigned diff = timestamp - g_initial_timestamp_of_file;
-    if (1000 <= g_size_of_file || 21600 <= diff) {
+    if (1000 <= g_size_of_file || 300 <= diff) {
         g_size_of_file = 0;
         g_most_recent_timestamp_of_file = 0;
-        // send_file_to_gateway();
+        // send to gateway
     }
-    */
 }
 
 /*
@@ -505,7 +490,6 @@ static void start_scanning() {
         return;
     }
 
-    /* @todo CONSTANTS */
     memset(&cp, 0, sizeof(cp));
     cp.lap[2] = 0x9e;
     cp.lap[1] = 0x8b;
@@ -604,7 +588,7 @@ void *cleanup_push_list(void) {
         LinkedListNode *temp = ll_head;
         while (temp != NULL) {
             if (get_system_time() - temp->data.initial_scanned_time > TIMEOUT) {
-                deleteNode(temp->data);
+                delete_node(temp->data);
                 printf("%s\n", "Removed a node");
             }
             temp = temp->next;
@@ -683,7 +667,6 @@ char *choose_file(char *messagetosend) {
                     if (0 == strcmp(messages[count], messagetosend)) {
                         strcat(path, "/");
                         strcat(path, messages[count]);
-                        // printf("%s\n", path);
                         ret = &path[0];
                         return ret;
                     }
@@ -1017,16 +1000,6 @@ void *ble_beacon(void *ptr) {
     }
 }
 
-void print_array() {
-    int max_devices = atoi(g_config.max_devices);
-    int i;
-    printf("%s", "Array: ");
-    for (i = 0; i < max_devices; i++) {
-        printf("%d ", g_idle_handler[i].idle);
-    }
-    printf("\n");
-}
-
 int main(int argc, char **argv) {
     char hex_c[MAX_BUFFER];          // buffer that contains the local of beacon
     pthread_t cleanup_push_list_id;  // cleanup_push_list thread ID
@@ -1095,7 +1068,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    /* todo */
+    /* @todo */
     pthread_t send_file_id[max_devices];
     for (i = 0; i < max_devices; i++) {
         pthread_create(&send_file_id[i], NULL, (void *)send_file, (void *)i);
