@@ -138,13 +138,13 @@
  */
 
 // The path of object push file
-char *g_filepath;
+char *g_filepath; 
 
 /*
  * UNION
  */
 
-// Converts float to Hex code
+// Theis union will convert floats into Hex code which will be used in the main code
 union {
     float f;
     unsigned char b[sizeof(float)];
@@ -170,17 +170,17 @@ typedef struct Config {
     char coordinate_Y[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];    // The Y coordinate of the beacon location
     char filename[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];        // The filename from the config file
     char filepath[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];        // The filepath from the config file
-    char level[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];           // The current level from the config file
+    char level[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];           // The current level in the building from the config file
     char rssi_coverage[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];   // The rssi coverage value from the config file
     char num_groups[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];      // The number of groups from the config file
     char num_messages[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];    // The number of messages from the config file
     char uuid[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];            // The universally unique identifer from the config file
-    int coordinate_X_len;                                                           // Stores the X coordinate
-    int coordinate_Y_len;                                                           // Stores the Y coordinate
+    int coordinate_X_len;                                                           // Stores the longitude coordinates
+    int coordinate_Y_len;                                                           // Stores the latitude coordinates
     int filename_len;                                                               // Stores the filename
     int filepath_len;                                                               // Stores the filepath
     int level_len;                                                                  // Stores the current level position
-    int rssi_coverage_len;                                                          // Stores the rssi coverage
+    int rssi_coverage_len;                                                          // Stores the signal strength value required for the user's device to connect
     int num_groups_len;                                                             // Stores the number of groups
     int num_messages_len;                                                           // Stores the number of messages
     int uuid_len;                                                                   // stores the universally unique identifier

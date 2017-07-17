@@ -178,7 +178,7 @@ void *send_file(void *ptr) {
     channel = obexftp_browse_bt_push(addr);
 
     /* Extract basename from filepath */
-    filename = strrchr(g_filepath, '/');
+    filename = strrchr(g_filepath, '/'); 
     printf("%s\n", filename);
     if (!filename) {
         filename = g_filepath;
