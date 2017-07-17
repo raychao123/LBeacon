@@ -935,7 +935,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     request.rparam = &status;
     request.rlen = 1;
 
-    ret = hci_send_req(device_handle, &rq, 1000);
+    ret = hci_send_req(device_handle, &request, 1000);
 
     if (ret < 0) {
         /* error handling */
@@ -952,7 +952,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
         .data[advertisement_data_copy.length + segment_length] =
         htobs(EIR_FLAGS);
     segment_length++;
-    aadvertisement_data_copy
+    advertisement_data_copy
         .data[advertisement_data_copy.length + segment_length] = htobs(0x1A);
     segment_length++;
     advertisement_data_copy.data[advertisement_data_copy.length] =
@@ -975,7 +975,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
         .data[advertisement_data_copy.length + segment_length] = htobs(0x02);
     segment_length++;
     advertisement_data_copy
-        .data[advertisement_data_copylength + segment_length] = htobs(0x15);
+        .data[advertisement_data_copy.length + segment_length] = htobs(0x15);
     segment_length++;
 
     unsigned int *uuid = uuid_str_to_data(advertising_uuid);
@@ -998,7 +998,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 
     advertisement_data_copy.length += segment_length;
 
-    memset(&rq, 0, sizeof(rq));
+    memset(&request, 0, sizeof(request));
     request.ogf = OGF_LE_CTL;
     request.ocf = OCF_LE_SET_ADVERTISING_DATA;
     request.cparam = &advertisement_data_copy;
