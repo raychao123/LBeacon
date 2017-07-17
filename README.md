@@ -44,6 +44,6 @@ $ sudo ldconfig -v
 The following commands must be done in the LBeacon project folder.
 ```sh
 $ cd src
-$ gcc LBeacon.c -g -o LBeacon -L/usr/local/lib -lrt -lpthread -lmulticobex -lbfb -lbluetooth -lobexftp -lopenobex
+$ gcc LBeacon.c Utilities.c LinkedList.c Queue.c -g -o LBeacon -L/usr/local/lib -lrt -lpthread -lmulticobex -lbfb -lbluetooth -lobexftp -lopenobex
 $ sudo ./LBeacon
 ```
