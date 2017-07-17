@@ -96,7 +96,7 @@ bool is_used_addr(char addr[]) {
      *  If the MAC address passed into the function is already in the push list,
      *  just return true.
      */
-    for (i = 0; i < MAX_DEVICES; i++) {
+    for (i = 0; i < MAXIMUM_NUMBER_OF_DEVICES; i++) {
         if (0 == strcmp(addr, g_push_list.discovered_device_addr[i])) {
             return true;
         }
@@ -106,9 +106,9 @@ bool is_used_addr(char addr[]) {
      *  If the scanned bluetooth device is not in the push list, add the
      *  MAC address to the push list.
      */
-    for (i = 0; i < MAX_DEVICES; i++) {
+    for (i = 0; i < MAXIMUM_NUMBER_OF_DEVICES; i++) {
         if (false == g_push_list.is_used_device[i]) {
-            for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
+            for (j = 0; j < LENGTH_OF_MAC_ADDRESS; j++) {
                 g_push_list.discovered_device_addr[i][j] = addr[j];
             }
             g_push_list.is_used_device[i] = true;
@@ -142,22 +142,24 @@ void *send_file(void *ptr) {
     obexftp_client_t *cli = NULL;
     char *addr = NULL;
     char *filename;
+    char g_pushed_user_addr[MAXIMUM_NUMBER_OF_DEVICES][LENGTH_OF_MAC_ADDRESS];  // An array used for storing pushed users and bluetooth device addresses
     int channel = -1;
     int dev_id;
     int socket;
     int i;
     int ret;
+    int g_idle_handler[MAXIMUM_NUMBER_OF_DEVICES] = {0};                        // An array of flags needed to indicate whether each push thread is idle
     long long start_time;
     long long end_time;
-
+   
     /*
      *  Split one half of the device IDs to one dongle and the other half to
      *  the second dongle.
      */
-    if (thread_addr->thread_id >= NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE) {
-        dev_id = PUSH_DONGLE_B;
+    if (thread_addr->thread_id >= OPTIMAL_NUMBER_OF_DEVICES_HANDLED_BY_A_PUSH_DONGLE) {
+        dev_id = PUSH_DONGLE_SECONDARY;
     } else {
-        dev_id = PUSH_DONGLE_A;
+        dev_id = PUSH_DONGLE_PRIMARY;
     }
 
     /*
@@ -176,7 +178,7 @@ void *send_file(void *ptr) {
     channel = obexftp_browse_bt_push(addr);
 
     /* Extract basename from filepath */
-    filename = strrchr(g_filepath, '/');
+    filename = strrchr(g_filepath, '/'); 
     printf("%s\n", filename);
     if (!filename) {
         filename = g_filepath;
@@ -194,7 +196,7 @@ void *send_file(void *ptr) {
         /* error handling */
         perror("Error opening obexftp client\n");
         g_idle_handler[thread_addr->thread_id] = 0;
-        for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
+        for (i = 0; i < LENGTH_OF_MAC_ADDRESS; i++) {
             g_pushed_user_addr[thread_addr->thread_id][i] = 0;
         }
         close(socket);
@@ -210,7 +212,7 @@ void *send_file(void *ptr) {
         obexftp_close(cli);
         cli = NULL;
         g_idle_handler[thread_addr->thread_id] = 0;
-        for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
+        for (i = 0; i < LENGTH_OF_MAC_ADDRESS; i++) {
             g_pushed_user_addr[thread_addr->thread_id][i] = 0;
         }
         close(socket);
@@ -235,7 +237,7 @@ void *send_file(void *ptr) {
     obexftp_close(cli);
     cli = NULL;
     g_idle_handler[thread_addr->thread_id] = 0;
-    for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
+    for (i = 0; i < LENGTH_OF_MAC_ADDRESS; i++) {
         g_pushed_user_addr[thread_addr->thread_id][i] = 0;
     }
     close(socket);
@@ -262,11 +264,12 @@ void *send_file(void *ptr) {
  *  None
  */
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
-    int idle = -1;                  // used to make sure there are at most 18 threads
-    int i;                          // iterator through number of push dongle
-    int j;                          // iterator through each block of dongle
-    char addr[LEN_OF_MAC_ADDRESS];  // store the MAC address as string
-
+    int idle = -1;                                                              // used to make sure there are at most 18 threads
+    int i;                                                                      // iterator through number of push dongle
+    int j;                                                                      // iterator through each block of dongle
+    int g_idle_handler[MAXIMUM_NUMBER_OF_DEVICES] = {0};                        // An array of flags needed to indicate whether each push thread is idle
+    char addr[LENGTH_OF_MAC_ADDRESS];                                           // store the MAC address as string
+    char g_pushed_user_addr[MAXIMUM_NUMBER_OF_DEVICES][LENGTH_OF_MAC_ADDRESS];  // An array used for storing pushed users and bluetooth device addresses
     /* Converts the bluetooth device address to string */
     ba2str(bdaddr, addr);
 
@@ -274,8 +277,8 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
      *  If the MAC address is already in the push list, return. Don't send the MAC address 
      *  to push dongle again.
      */
-    for (i = 0; i < NUM_OF_PUSH_DONGLES; i++) {
-        for (j = 0; j < MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE; j++) {
+    for (i = 0; i < NUMBER_OF_PUSH_DONGLES; i++) {
+        for (j = 0; j < MAXIMUM_NUMBER_OF_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE; j++) {
             if (0 == strcmp(addr, g_pushed_user_addr[i * j + j])) {
                 return;
             }
@@ -321,7 +324,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
  *  None
  */
 static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
-    char addr[LEN_OF_MAC_ADDRESS];  // MAC address that will be printed
+    char addr[LENGTH_OF_MAC_ADDRESS];  // MAC address that will be printed
 
     /* Converts the bluetooth device address to string */
     ba2str(bdaddr, addr);
@@ -358,7 +361,12 @@ static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
  *  None
  */
 static void track_devices(bdaddr_t *bdaddr, char *filename) {
-    char ll2c[10];  // used for converting long long to char[]
+    char ll2c[10];                                  // used for converting long long to char[]
+    char g_addr[LENGTH_OF_MAC_ADDRESS] = {0};       // An array used for tracking MAC addresses of scanned devices
+    unsigned g_initial_timestamp_of_file = 0;       // The first timestamp of the output file used for tracking scanned devices
+    unsigned g_most_recent_timestamp_of_file = 0;   // The most recent time of the output file used for tracking scanned devices
+    int g_size_of_file = 0;                         // Number of lines in the output file used for tracking scanned devices
+
 
     /*
      *  Get current timestamp when tracking bluetooth devices. If file is empty,
@@ -595,9 +603,9 @@ static void start_scanning() {
  *
  *  None
  */
-void *timeout_cleaner(void) {  //@todo function name should start with a verb
-    int i;                     // iterator to loop total number of devices
-    int j;  // iterator to loop the length of bluetooth device's MAC address
+void *timeout_cleaner(void) {   //@todo function name should start with a verb
+    int i;                      // iterator to loop total number of devices
+    int j;                      // iterator to loop the length of bluetooth device's MAC address
 
     /*
      *  In the background, continuously check if it has been 20 seconds since
@@ -605,14 +613,14 @@ void *timeout_cleaner(void) {  //@todo function name should start with a verb
      *  list.
      */
     while (1) {
-        for (i = 0; i < MAX_DEVICES; i++) {
+        for (i = 0; i < MAXIMUM_NUMBER_OF_DEVICES; i++) {
             if (get_system_time() - g_push_list.first_appearance_time[i] >
                     TIMEOUT &&
                 true == g_push_list.is_used_device[i]) {
                 printf(
                     "Cleaner time: %lld ms\n",
                     get_system_time() - g_push_list.first_appearance_time[i]);
-                for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
+                for (j = 0; j < LENGTH_OF_MAC_ADDRESS; j++) {
                     g_push_list.discovered_device_addr[i][j] = 0;
                 }
                 g_push_list.first_appearance_time[i] = 0;
@@ -736,8 +744,8 @@ Config get_config(char *filename) {
         /* error handling */
         perror("Error opening file\n");
     } else {
-        char line[MAX_BUFFER];  // stores the string of current line being read
-        int i = 0;              // keeps track of which line is being processed
+        char line[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];    // stores the string of current line being read
+        int i = 0;                                                              // keeps track of which line is being processed
 
         /*
          *  If there are still lines to read in the config file, read the line
@@ -1045,7 +1053,9 @@ int disable_advertising() {
  *
  *  None
  */
-void ctrlc_handler(int s) { g_done = true; }
+void ctrlc_handler(int s) { 
+    bool g_done = true; 
+    }
 
 /*
  *  ble_beacon:
@@ -1062,7 +1072,7 @@ void ctrlc_handler(int s) { g_done = true; }
  */
 void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
-
+    bool g_done = false;    // A flag that is used to check if CTRL-C is pressed
     /* @todo */
     if (rc == 0) {
         struct sigaction sigint_handler;
@@ -1132,7 +1142,7 @@ int main(int argc, char **argv) {
     }
 
     /* Reset the device queue */
-    for (i = 0; i < MAX_DEVICES; i++) {
+    for (i = 0; i < MAXIMUM_NUMBER_OF_DEVICES; i++) {
         g_push_list.is_used_device[i] = false;
     }
 
