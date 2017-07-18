@@ -243,7 +243,13 @@ void *send_file(void *arg) {
 /*
  *  queue_to_array:
  *
- *  @todo
+ *  This function will continuously look through the ThreadStatus array that
+ *  contains all the send_file thread statuses. Once a thread becomes available,
+ *  queue_to_array working thread will check if the queue has any MAC addresses
+ *  that is waiting to send message file. If so, remove the MAC address from the
+ *  queue and add it to the ThreadStatus array. We need to update the
+ *  is_waiting_to_send boolean variable as true so the send_file function knows
+ *  that a file needs to be sent to the scanned MAC address.
  *
  *  Parameters:
  *
@@ -1012,7 +1018,6 @@ int main(int argc, char **argv) {
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
     int max_devices = atoi(g_config.max_devices);
-    // printf("%d\n", max_devices);
     g_idle_handler = malloc(max_devices * sizeof(ThreadStatus));
     if (g_idle_handler == NULL) {
         /* handle error */
@@ -1022,7 +1027,6 @@ int main(int argc, char **argv) {
     for (i = 0; i < max_devices; i++) {
         for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
             g_idle_handler[i].scanned_mac_address[j] = 0;
-            // memcpy(g_idle_handler[i].scanned_mac_address, &a, 18);
         }
         g_idle_handler[i].idle = -1;
         g_idle_handler[i].is_waiting_to_send = false;
@@ -1046,7 +1050,7 @@ int main(int argc, char **argv) {
             coordinate_X.b[3], coordinate_Y.b[0], coordinate_Y.b[1],
             coordinate_Y.b[2], coordinate_Y.b[3]);
 
-    /* Device cleaner */
+    /* Clean up linked list */
     if (pthread_create(&cleanup_push_list_id, NULL, (void *)cleanup_push_list,
                        NULL)) {
         /* handle error */
@@ -1061,20 +1065,20 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    /* @todo */
+    /* Send MAC address in queue to an available thread */
     if (pthread_create(&queue_to_array_id, NULL, (void *)queue_to_array,
                        NULL)) {
         fprintf(stderr, "Error with queue_to_array using pthread_create\n");
         return -1;
     }
 
-    /* @todo */
+    /* Send message to scanned MAC address */
     pthread_t send_file_id[max_devices];
     for (i = 0; i < max_devices; i++) {
         pthread_create(&send_file_id[i], NULL, (void *)send_file, (void *)i);
     }
 
-    /* Start scanning for devices */
+    /* Start scanning for bluetooth devices */
     while (cancelled == false) {
         start_scanning();
     }

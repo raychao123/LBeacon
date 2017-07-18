@@ -205,7 +205,7 @@ static void start_scanning();
 // Send scanned user's MAC address to push dongle
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi);
 
-// @todo
+// Check continuously and send MAC address from queue to an available thread
 void *queue_to_array();
 
 // Send the push message to the user's device by a working asynchronous thread
