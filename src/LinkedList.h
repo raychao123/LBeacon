@@ -46,10 +46,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Struct for storing scanned timestamp and MAC address of bluetooth device
+// Length of Bluetooth MAC address
+#define LENGTH_OF_MAC_ADDRESS 18
+
+// Struct for storing scanned timestamp and MAC address of the bluetooth device
 typedef struct PushList {
     long long initial_scanned_time;
-    char scanned_mac_address[18];
+    char scanned_mac_address[LENGTH_OF_MAC_ADDRESS];
 } PushList;
 
 // Struct for each node in the linked list; data is a PushList struct
@@ -59,10 +62,10 @@ typedef struct LinkedListNode {
 } LinkedListNode;
 
 // Pointer to the LinkedListNode at the head of the linked list
-extern LinkedListNode *ll_head;
+extern LinkedListNode *linked_list_head;
 
 // Pointer to current LinkedListNode of the linked list
-extern LinkedListNode *ll_current;
+extern LinkedListNode *linked_list_current;
 
 // Add LinkedListNode to the front of the linked list
 void insert_first(PushList data);
@@ -71,7 +74,7 @@ void insert_first(PushList data);
 void delete_node(PushList data);
 
 // Get the length of the linked list
-int length();
+int get_linked_list_length();
 
 // Print all the items in the linked list
 void print_linked_list();

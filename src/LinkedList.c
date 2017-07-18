@@ -16,7 +16,10 @@
  *      This file contains the implementation of a linked list data structure.
  *      It has the feature of inserting a node to the front of the linked list
  *      and deleting a specific node. It can also check the length of the linked
- *      list and print all the information stored.
+ *      list and print all the information stored. The purpose of this linked
+ *      list implementation is to allow scanned MAC addresses and its timestamp
+ *      to be stored as a way of keeping track which devices have just been
+ *      scanned.
  *
  * File Name:
  *
@@ -45,11 +48,11 @@
 
 #include "LinkedList.h"
 
-// Pointer to the LinkedListNode at the head of the linked list
-LinkedListNode *ll_head = NULL;
+// Initialize pointer to the LinkedListNode at the head of the linked list
+LinkedListNode *linked_list_head = NULL;
 
-// Pointer to current LinkedListNode of the linked list
-LinkedListNode *ll_current = NULL;
+// Initialize pointer to current LinkedListNode of the linked list
+LinkedListNode *linked_list_current = NULL;
 
 /*
  *  insert_first:
@@ -75,14 +78,14 @@ void insert_first(PushList data) {
 
     /* Copy data passed into the function into the new node */
     link->data.initial_scanned_time = data.initial_scanned_time;
-    for (mac_address = 0; mac_address < 18; mac_address++) {
+    for (mac_address = 0; mac_address < LENGTH_OF_MAC_ADDRESS; mac_address++) {
         link->data.scanned_mac_address[mac_address] =
             data.scanned_mac_address[mac_address];
     }
 
     /* Point it to old first node and point first to new first node */
-    link->next = ll_head;
-    ll_head = link;
+    link->next = linked_list_head;
+    linked_list_head = link;
 }
 
 /*
@@ -104,39 +107,40 @@ void insert_first(PushList data) {
  */
 void delete_node(PushList data) {
     /* Start from the first node */
-    struct LinkedListNode *ll_current = ll_head;
+    struct LinkedListNode *linked_list_current = linked_list_head;
     struct LinkedListNode *ll_previous = NULL;
 
     /* If head if empty */
-    if (ll_head == NULL) {
+    if (linked_list_head == NULL) {
         return;
     }
 
     /* Go through list */
-    while (strcmp(ll_current->data.scanned_mac_address,
+    while (strcmp(linked_list_current->data.scanned_mac_address,
                   data.scanned_mac_address) != 0) {
-        /* If last node, return; else store reference to ll_current and move to
+        /* If last node, return; else store reference to linked_list_current and
+         * move to
          * the next node */
-        if (ll_current->next == NULL) {
+        if (linked_list_current->next == NULL) {
             return;
         } else {
-            ll_previous = ll_current;
-            ll_current = ll_current->next;
+            ll_previous = linked_list_current;
+            linked_list_current = linked_list_current->next;
         }
     }
 
     /* If found a node with matching data, update node */
-    if (ll_current == ll_head) {
-        ll_head = ll_head->next;
+    if (linked_list_current == linked_list_head) {
+        linked_list_head = linked_list_head->next;
     } else {
-        ll_previous->next = ll_current->next;
+        ll_previous->next = linked_list_current->next;
     }
 
     return;
 }
 
 /*
- *  length:
+ *  get_linked_list_length:
  *
  *  This function will get the length of the linked list. Starting from the
  *  head, we will increment the length variable by one as long as we haven't
@@ -150,14 +154,14 @@ void delete_node(PushList data) {
  *
  *  length - number of nodes in the linked list
  */
-int length() {
+int get_linked_list_length() {
     int length = 0;
-    struct LinkedListNode *ll_current;
+    struct LinkedListNode *linked_list_current;
 
     /* Start from the beginning. Increment by one as long as the end hasn't been
      * found. */
-    for (ll_current = ll_head; ll_current != NULL;
-         ll_current = ll_current->next) {
+    for (linked_list_current = linked_list_head; linked_list_current != NULL;
+         linked_list_current = linked_list_current->next) {
         length++;
     }
 
@@ -181,7 +185,7 @@ int length() {
  */
 void print_linked_list() {
     /* Start from the first node */
-    struct LinkedListNode *ptr = ll_head;
+    struct LinkedListNode *ptr = linked_list_head;
 
     /* Start from the beginning. Stop when the next node doesn't exist. */
     printf("%s", "Linked List: ");

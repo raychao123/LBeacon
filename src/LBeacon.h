@@ -97,7 +97,7 @@
 #define TIMEOUT 60000
 
 // Command opcode pack/unpack from HCI library
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 
 // BlueZ bluetooth protocol: flags
 #define EIR_FLAGS 0X01

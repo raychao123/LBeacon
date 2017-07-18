@@ -44,17 +44,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Length of Bluetooth MAC address
+#define LENGTH_OF_MAC_ADDRESS 18
+
 // Struct for each node in the queue; data is the MAC address
 typedef struct QueueNode {
-    char data[18];
+    char data[LENGTH_OF_MAC_ADDRESS];
     struct QueueNode *next;
 } QueueNode;
 
 // Pointer to the QueueNode at the head of the queue
-extern QueueNode *q_head;
+extern QueueNode *queue_head;
 
 // Pointer to the QueueNode at the tail of the queue
-extern QueueNode *q_tail;
+extern QueueNode *queue_tail;
 
 // Add QueueNode to the end of the queue
 void enqueue(char data[]);

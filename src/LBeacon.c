@@ -173,7 +173,7 @@ long long get_system_time() {
  *  true - used MAC address
  */
 bool is_used_addr(char addr[]) {
-    LinkedListNode *temp = ll_head;
+    LinkedListNode *temp = linked_list_head;
     while (temp != NULL) {
         if (0 == strcmp(addr, temp->data.scanned_mac_address)) {
             return true;
@@ -586,7 +586,7 @@ static void start_scanning() {
 void *cleanup_push_list(void) {
     bool cancelled = false;
     while (cancelled == false) {
-        LinkedListNode *temp = ll_head;
+        LinkedListNode *temp = linked_list_head;
         while (temp != NULL) {
             if (get_system_time() - temp->data.initial_scanned_time > TIMEOUT) {
                 printf("Removed %s from linked list.\n",
