@@ -76,75 +76,100 @@
  * CONSTANTS
  */
 
-// File path of the config file
+/* File path of the config file */
 #define CONFIG_FILENAME "../config/config.conf"
 
-// Parameter that determines the start of the config file
+/* Parameter that determines the start of the config file */
 #define DELIMITER "="
 
-// Length of Bluetooth MAC address
+/* Length of Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
 
-// Maximum number of characters in each line of config file
-#define MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE 64
+/* Maximum number of characters in each line of config file */
+#define MAXIMUM_BUFFER 64
 
-// Maximum number of devices to be handled by all PUSH dongles
+/* Maximum number of devices to be handled by all PUSH dongles */
 #define MAXIMUM_NUMBER_OF_DEVICES 18
 
-// Maximum number of devices that a PUSH dongle can handle
+/* Maximum number of devices that a PUSH dongle can handle */
 #define MAXIMUM_NUMBER_OF_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
 
-// Maximum number of the Bluetooth Object PUSH threads
+/* Maximum number of the Bluetooth Object PUSH threads */
 #define MAXIMUM_NUMBER_OF_THREADS 18
 
-// Optimal number of user devices handled by each PUSH dongle
+/* Optimal number of user devices handled by each PUSH dongle */
 #define OPTIMAL_NUMBER_OF_DEVICES_HANDLED_BY_A_PUSH_DONGLE 5
 
-// Number of the Bluetooth dongles used for PUSH function
+/* Number of the Bluetooth dongles used for PUSH function */
 #define NUMBER_OF_PUSH_DONGLES 2
 
-// Device ID of the primary PUSH dongle
+/* Device ID of the primary PUSH dongle */
 #define PUSH_DONGLE_PRIMARY 2
 
-// Device ID of the secondary PUSH dongle
+/* Device ID of the secondary PUSH dongle */
 #define PUSH_DONGLE_SECONDARY 3
 
-// Device ID of the SCAN dongle
+/* Device ID of the SCAN dongle */
 #define SCAN_DONGLE 1
 
-// Transmission range limiter that only allows devices in the RSSI range to connect
+/* Transmission range limiter that only allows devices in the RSSI range to
+ * connect */
 #define RSSI_RANGE -60
 
-// Time interval, in milliseconds, that determines if the bluetooth device can be removed from the push list
+/* Time interval, in milliseconds, that determines if the bluetooth device can
+ * be removed from the push list */
 #define TIMEOUT 20000
 
-// Command opcode pack/unpack from HCI library
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
+/* Command opcode pack/unpack from HCI library */
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
 
-// BlueZ bluetooth extended inquiry response protocol: flags
+/* BlueZ bluetooth extended inquiry response protocol: flags */
 #define EIR_FLAGS 0X01
 
-// BlueZ bluetooth extended inquiry response protocol: shorten local name
+/* BlueZ bluetooth extended inquiry response protocol: shorten local name */
 #define EIR_NAME_SHORT 0x08
 
-// BlueZ bluetooth extended inquiry response protocol: complete local name
+/* BlueZ bluetooth extended inquiry response protocol: complete local name */
 #define EIR_NAME_COMPLETE 0x09
 
-// BlueZ bluetooth extended inquiry response protocol:: Manufacturer Specific Data
+/* BlueZ bluetooth extended inquiry response protocol:: Manufacturer Specific
+ * Data */
 #define EIR_MANUFACTURE_SPECIFIC_DATA 0xFF
 
 /*
  * GLOBAL VARIABLES
  */
 
-// The path of object push file
-char *g_filepath; 
+/* An array used for tracking MAC addresses of scanned devices */
+char g_addr[LENGTH_OF_MAC_ADDRESS] = {0};
+
+/* A flag that is used to check if CTRL-C is pressed */
+bool g_done = false;
+
+/* The path of object push file */
+char *g_filepath;
+
+/* An array of flags needed to indicate whether each push thread is idle */
+int g_idle_handler[MAXIMUM_NUMBER_OF_DEVICES] = {0};
+
+/* The first timestamp of the output file used for tracking scanned devices */
+unsigned g_initial_timestamp_of_file = 0;
+
+/* The most recent time of the output file used for tracking scanned devices */
+unsigned g_most_recent_timestamp_of_file = 0;
+
+/* An array used for storing pushed users and bluetooth device addresses */
+char g_pushed_user_addr[MAXIMUM_NUMBER_OF_DEVICES][LENGTH_OF_MAC_ADDRESS];
+
+/* Number of lines in the output file used for tracking scanned devices */
+int g_size_of_file = 0;
 
 /*
  * UNION
  */
 
-// Theis union will convert floats into Hex code which will be used in the main code
+/* Theis union will convert floats into Hex code which will be used in the main
+ */
 union {
     float f;
     unsigned char b[sizeof(float)];
@@ -166,36 +191,75 @@ union {
  */
 
 typedef struct Config {
-    char coordinate_X[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];    // A string with information about the X coordinate of the beacon location from the config file
-    char coordinate_Y[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];    // A string with information about the Y coordinate of the beacon location from the config file
-    char filename[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];        // A string with information about the filename from the config file from the config file
-    char filepath[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];        // A string with information about the filepath from the config file from the config file
-    char level[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];           // A string with information about the current level in the building from the config file
-    char rssi_coverage[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];   // A string with information about the required signal strength from the config file
-    char num_groups[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];      // A string with information about the number of groups from the config file
-    char num_messages[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];    // A string with information about the number of messages from the config file
-    char uuid[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];            // A string with information about the universally unique identifer from the config file
-    int coordinate_X_len;                                                           // Stores the string length needed to store the X coordinate
-    int coordinate_Y_len;                                                           // Stores the string length needed to store the Y coordinate
-    int filename_len;                                                               // Stores the string length needed to store the filename
-    int filepath_len;                                                               // Stores the string length needed to store the filepath
-    int level_len;                                                                  // Stores the string length needed to store the current level position
-    int rssi_coverage_len;                                                          // Stores the string length needed to store the required signal strength
-    int num_groups_len;                                                             // Stores the string length needed to store the number of groups
-    int num_messages_len;                                                           // Stores the string length needed to store the number of messages
-    int uuid_len;                                                                   // Stores the string length needed to store the universally unique identifer
+    /* A string with information about the X coordinate of the beacon location
+     */
+    char coordinate_X[MAXIMUM_BUFFER];
+
+    /* A string with information about the Y coordinate of the beacon location
+     */
+    char coordinate_Y[MAXIMUM_BUFFER];
+
+    /* A string with information about the filename */
+    char filename[MAXIMUM_BUFFER];
+
+    /* A string with information about the filepath */
+    char filepath[MAXIMUM_BUFFER];
+
+    /* A string with information about the current level in the building */
+    char level[MAXIMUM_BUFFER];
+
+    /* A string with information about the required signal strength */
+    char rssi_coverage[MAXIMUM_BUFFER];
+
+    /* A string with information about the number of groups */
+    char number_of_groups[MAXIMUM_BUFFER];
+
+    /* A string with information about the number of messages */
+    char number_of_messages[MAXIMUM_BUFFER];
+
+    /* A string with information about the universally unique identifer */
+    char uuid[MAXIMUM_BUFFER];
+
+    /* Stores the string length needed to store the X coordinate */
+    int coordinate_X_length;
+
+    /* Stores the string length needed to store the Y coordinate */
+    int coordinate_Y_length;
+
+    /* Stores the string length needed to store the filename */
+    int filename_length;
+
+    /* Stores the string length needed to store the filepath */
+    int filepath_length;
+
+    /* Stores the string length needed to store the current level position */
+    int level_length;
+
+    /* Stores the string length needed to store the required signal strength */
+    int rssi_coverage_length;
+
+    /* Stores the string length needed to store the number of groups */
+    int number_of_groups_length;
+
+    /* Stores the string length needed to store the number of messages */
+    int number_of_messages_length;
+
+    /* Stores the string length needed to store the universally unique identifer
+     */
+    int uuid_length;
 } Config;
 
-// Struct for storing config information from the input file
+/* Struct for storing config information from the input file */
 Config g_config;
 
 typedef struct PushList {
     long long first_appearance_time[MAXIMUM_NUMBER_OF_DEVICES];
-    char discovered_device_addr[MAXIMUM_NUMBER_OF_DEVICES][LENGTH_OF_MAC_ADDRESS];
+    char discovered_device_addr[MAXIMUM_NUMBER_OF_DEVICES]
+                               [LENGTH_OF_MAC_ADDRESS];
     bool is_used_device[MAXIMUM_NUMBER_OF_DEVICES];
 } PushList;
 
-// Struct for storing information on users' devices discovered by each becon
+/* Struct for storing information on users' devices discovered by each beacon */
 PushList g_push_list;
 
 typedef struct ThreadAddr {
@@ -204,7 +268,7 @@ typedef struct ThreadAddr {
     char addr[LENGTH_OF_MAC_ADDRESS];
 } ThreadAddr;
 
-// Struct for storing information for each thread
+/* Struct for storing information for each thread */
 ThreadAddr g_thread_addr[MAXIMUM_NUMBER_OF_DEVICES];
 
 /*
