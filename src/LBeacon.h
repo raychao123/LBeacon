@@ -199,9 +199,6 @@ long long get_system_time();
 // Check whether the user's address is being used or can be pushed to again
 bool is_used_addr(char addr[]);
 
-// Scan continuously for bluetooth devices under the beacon
-static void start_scanning();
-
 // Send scanned user's MAC address to push dongle
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi);
 
@@ -211,11 +208,14 @@ void *queue_to_array();
 // Send the push message to the user's device by a working asynchronous thread
 void *send_file(void *arg);
 
-// Remove the user's MAC address from pushed list
-void *cleanup_push_list(void);
-
 // Print the result of RSSI value for scanned MAC address
 static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi);
+
+// Scan continuously for bluetooth devices under the beacon
+static void start_scanning();
+
+// Remove the user's MAC address from pushed list
+void *cleanup_push_list(void);
 
 // Track scanned MAC addresses and store information in an output file
 static void track_devices(bdaddr_t *bdaddr, char *filename);

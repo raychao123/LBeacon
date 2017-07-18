@@ -102,6 +102,85 @@ bool is_used_addr(char addr[]) {
 }
 
 /*
+ *  send_to_push_dongle:
+ *
+ *  For each new MAC address of scanned bluetooth device, add to an array of
+ *  ThreadAddr struct that will give it a thread ID and send the MAC address to
+ *  send_file. Only add MAC address if it isn't in the push list and does not
+ *  have a thread ID. If the bluetooth device is already in the push list, don't
+ *  send to push dongle again.
+ *
+ *  Parameters:
+ *
+ *  bdaddr - bluetooth device address
+ *  rssi - RSSI value of bluetooth device
+ *
+ *  Return value:
+ *
+ *  None
+ */
+static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
+    int i;                          // iterator through number of push dongle
+    char addr[LEN_OF_MAC_ADDRESS];  // store the MAC address as string
+
+    ba2str(bdaddr, addr);
+
+    // printf("scanned: %s\n", &addr[0]);
+    if (is_used_addr(addr) == false) {
+        // printf("need to add to linked list: %s\n", &addr[0]);
+        PushList data;
+        data.initial_scanned_time = get_system_time();
+        for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
+            data.scanned_mac_address[i] = addr[i];
+        }
+        insert_first(data);
+        enqueue(addr);
+        print_linked_list();
+        print_queue();
+    }
+}
+
+/*
+ *  queue_to_array:
+ *
+ *  This function will continuously look through the ThreadStatus array that
+ *  contains all the send_file thread statuses. Once a thread becomes available,
+ *  queue_to_array working thread will check if the queue has any MAC addresses
+ *  that is waiting to send message file. If so, remove the MAC address from the
+ *  queue and add it to the ThreadStatus array. We need to update the
+ *  is_waiting_to_send boolean variable as true so the send_file function knows
+ *  that a file needs to be sent to the scanned MAC address.
+ *
+ *  Parameters:
+ *
+ *  None
+ *
+ *  Return value:
+ *
+ *  None
+ */
+void *queue_to_array() {
+    int max_devices = atoi(g_config.max_devices);
+    int i;
+    int j;
+    bool cancelled = false;
+
+    while (cancelled == false) {
+        for (i = 0; i < max_devices; i++) {
+            char *addr = peek();
+            if (g_idle_handler[i].idle == -1 && addr != NULL) {
+                for (j = 0; j < 18; j++) {
+                    g_idle_handler[i].scanned_mac_address[j] = addr[j];
+                }
+                dequeue();
+                g_idle_handler[i].idle = i;
+                g_idle_handler[i].is_waiting_to_send = true;
+            }
+        }
+    }
+}
+
+/*
  *  send_file:
  *
  *  Sends the push message to the scanned bluetooth device. This function is
@@ -241,86 +320,7 @@ void *send_file(void *arg) {
 }
 
 /*
- *  queue_to_array:
- *
- *  This function will continuously look through the ThreadStatus array that
- *  contains all the send_file thread statuses. Once a thread becomes available,
- *  queue_to_array working thread will check if the queue has any MAC addresses
- *  that is waiting to send message file. If so, remove the MAC address from the
- *  queue and add it to the ThreadStatus array. We need to update the
- *  is_waiting_to_send boolean variable as true so the send_file function knows
- *  that a file needs to be sent to the scanned MAC address.
- *
- *  Parameters:
- *
- *  None
- *
- *  Return value:
- *
- *  None
- */
-void *queue_to_array() {
-    int max_devices = atoi(g_config.max_devices);
-    int i;
-    int j;
-    bool cancelled = false;
-
-    while (cancelled == false) {
-        for (i = 0; i < max_devices; i++) {
-            char *addr = peek();
-            if (g_idle_handler[i].idle == -1 && addr != NULL) {
-                for (j = 0; j < 18; j++) {
-                    g_idle_handler[i].scanned_mac_address[j] = addr[j];
-                }
-                dequeue();
-                g_idle_handler[i].idle = i;
-                g_idle_handler[i].is_waiting_to_send = true;
-            }
-        }
-    }
-}
-
-/*
- *  send_to_push_dongle:
- *
- *  For each new MAC address of scanned bluetooth device, add to an array of
- *  ThreadAddr struct that will give it a thread ID and send the MAC address to
- *  send_file. Only add MAC address if it isn't in the push list and does not
- *  have a thread ID. If the bluetooth device is already in the push list, don't
- *  send to push dongle again.
- *
- *  Parameters:
- *
- *  bdaddr - bluetooth device address
- *  rssi - RSSI value of bluetooth device
- *
- *  Return value:
- *
- *  None
- */
-static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
-    int i;                          // iterator through number of push dongle
-    char addr[LEN_OF_MAC_ADDRESS];  // store the MAC address as string
-
-    ba2str(bdaddr, addr);
-
-    // printf("scanned: %s\n", &addr[0]);
-    if (is_used_addr(addr) == false) {
-        // printf("need to add to linked list: %s\n", &addr[0]);
-        PushList data;
-        data.initial_scanned_time = get_system_time();
-        for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
-            data.scanned_mac_address[i] = addr[i];
-        }
-        insert_first(data);
-        enqueue(addr);
-        print_linked_list();
-        print_queue();
-    }
-}
-
-/*
- *  print_result:
+ *  print_RSSI_value:
  *
  *  Print the RSSI value along with the MAC address of user's scanned bluetooth
  *  device. When running, we will continuously see a list of scanned bluetooth
@@ -349,90 +349,6 @@ static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
     }
     printf("\n");
     fflush(NULL);
-}
-
-/*
- *  track_devices:
- *
- *  Track the MAC addresses of scanned bluetooth devices under the beacon. An
- *  output file will contain each timestamp and the MAC addresses of the scanned
- *  bluetooth devices at the given timestamp. Format timestamp and MAC addresses
- *  into a char[] and append new line to end of file. " - " is used to separate
- *  timestamp with MAC address and ", " is used to separate each MAC address.
- *
- *  Parameters:
- *
- *  bdaddr - bluetooth device address
- *  filename - name of the file where all the data will be stored
- *
- *  Return value:
- *
- *  None
- */
-static void track_devices(bdaddr_t *bdaddr, char *filename) {
-    char addr[LEN_OF_MAC_ADDRESS];
-    char ll2c[10];  // used for converting long long to char[]
-    unsigned timestamp = (unsigned)time(NULL);
-
-    /* Get current timestamp when tracking bluetooth devices. If file is empty,
-     * create new file with LBeacon ID. */
-    sprintf(ll2c, "%u", timestamp);
-    if (0 == g_size_of_file) {
-        FILE *fd = fopen(filename, "w+");  // w+ overwrites the file
-        if (fd == NULL) {
-            /* handle error */
-            perror("Error opening file");
-            return;
-        }
-        fputs("LBeacon ID: ", fd);
-        fputs(g_config.uuid, fd);
-        fclose(fd);
-        g_size_of_file++;
-        g_initial_timestamp_of_file = timestamp;
-        memset(&addr[0], 0, sizeof(addr));
-    }
-
-    /* If timestamp already exists add MAC address to end of previous line, else
-     * create new line. Double check that MAC address is not already added at a
-     * given timestamp using strstr. */
-    ba2str(bdaddr, addr);
-
-    FILE *output;
-    char buffer[1024];
-    output = fopen(filename, "a+");
-
-    if (output == NULL) {
-        /* handle error */
-        perror("Error opening file");
-        return;
-    }
-
-    while (fgets(buffer, sizeof(buffer), output) != NULL) {
-    }
-
-    if (timestamp != g_most_recent_timestamp_of_file) {
-        fputs("\n", output);
-        fputs(ll2c, output);
-        fputs(" - ", output);
-        fputs(addr, output);
-        fclose(output);
-
-        g_most_recent_timestamp_of_file = timestamp;
-        g_size_of_file++;
-    } else {
-        if (strstr(buffer, addr) == NULL) {
-            fputs(", ", output);
-            fputs(addr, output);
-        }
-        fclose(output);
-    }
-
-    unsigned diff = timestamp - g_initial_timestamp_of_file;
-    if (1000 <= g_size_of_file || 300 <= diff) {
-        g_size_of_file = 0;
-        g_most_recent_timestamp_of_file = 0;
-        // send to gateway
-    }
 }
 
 /*
@@ -599,6 +515,90 @@ void *cleanup_push_list(void) {
             }
             temp = temp->next;
         }
+    }
+}
+
+/*
+ *  track_devices:
+ *
+ *  Track the MAC addresses of scanned bluetooth devices under the beacon. An
+ *  output file will contain each timestamp and the MAC addresses of the scanned
+ *  bluetooth devices at the given timestamp. Format timestamp and MAC addresses
+ *  into a char[] and append new line to end of file. " - " is used to separate
+ *  timestamp with MAC address and ", " is used to separate each MAC address.
+ *
+ *  Parameters:
+ *
+ *  bdaddr - bluetooth device address
+ *  filename - name of the file where all the data will be stored
+ *
+ *  Return value:
+ *
+ *  None
+ */
+static void track_devices(bdaddr_t *bdaddr, char *filename) {
+    char addr[LEN_OF_MAC_ADDRESS];
+    char ll2c[10];  // used for converting long long to char[]
+    unsigned timestamp = (unsigned)time(NULL);
+
+    /* Get current timestamp when tracking bluetooth devices. If file is empty,
+     * create new file with LBeacon ID. */
+    sprintf(ll2c, "%u", timestamp);
+    if (0 == g_size_of_file) {
+        FILE *fd = fopen(filename, "w+");  // w+ overwrites the file
+        if (fd == NULL) {
+            /* handle error */
+            perror("Error opening file");
+            return;
+        }
+        fputs("LBeacon ID: ", fd);
+        fputs(g_config.uuid, fd);
+        fclose(fd);
+        g_size_of_file++;
+        g_initial_timestamp_of_file = timestamp;
+        memset(&addr[0], 0, sizeof(addr));
+    }
+
+    /* If timestamp already exists add MAC address to end of previous line, else
+     * create new line. Double check that MAC address is not already added at a
+     * given timestamp using strstr. */
+    ba2str(bdaddr, addr);
+
+    FILE *output;
+    char buffer[1024];
+    output = fopen(filename, "a+");
+
+    if (output == NULL) {
+        /* handle error */
+        perror("Error opening file");
+        return;
+    }
+
+    while (fgets(buffer, sizeof(buffer), output) != NULL) {
+    }
+
+    if (timestamp != g_most_recent_timestamp_of_file) {
+        fputs("\n", output);
+        fputs(ll2c, output);
+        fputs(" - ", output);
+        fputs(addr, output);
+        fclose(output);
+
+        g_most_recent_timestamp_of_file = timestamp;
+        g_size_of_file++;
+    } else {
+        if (strstr(buffer, addr) == NULL) {
+            fputs(", ", output);
+            fputs(addr, output);
+        }
+        fclose(output);
+    }
+
+    unsigned diff = timestamp - g_initial_timestamp_of_file;
+    if (1000 <= g_size_of_file || 300 <= diff) {
+        g_size_of_file = 0;
+        g_most_recent_timestamp_of_file = 0;
+        // send to gateway
     }
 }
 
