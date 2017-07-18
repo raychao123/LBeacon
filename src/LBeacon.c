@@ -142,21 +142,20 @@ void *send_file(void *ptr) {
     obexftp_client_t *cli = NULL;
     char *addr = NULL;
     char *filename;
-    char g_pushed_user_addr[MAXIMUM_NUMBER_OF_DEVICES][LENGTH_OF_MAC_ADDRESS];  // An array used for storing pushed users and bluetooth device addresses
     int channel = -1;
     int dev_id;
     int socket;
     int i;
     int ret;
-    int g_idle_handler[MAXIMUM_NUMBER_OF_DEVICES] = {0};                        // An array of flags needed to indicate whether each push thread is idle
     long long start_time;
     long long end_time;
-   
+
     /*
      *  Split one half of the device IDs to one dongle and the other half to
      *  the second dongle.
      */
-    if (thread_addr->thread_id >= OPTIMAL_NUMBER_OF_DEVICES_HANDLED_BY_A_PUSH_DONGLE) {
+    if (thread_addr->thread_id >=
+        OPTIMAL_NUMBER_OF_DEVICES_HANDLED_BY_A_PUSH_DONGLE) {
         dev_id = PUSH_DONGLE_SECONDARY;
     } else {
         dev_id = PUSH_DONGLE_PRIMARY;
@@ -178,7 +177,7 @@ void *send_file(void *ptr) {
     channel = obexftp_browse_bt_push(addr);
 
     /* Extract basename from filepath */
-    filename = strrchr(g_filepath, '/'); 
+    filename = strrchr(g_filepath, '/');
     printf("%s\n", filename);
     if (!filename) {
         filename = g_filepath;
@@ -264,21 +263,26 @@ void *send_file(void *ptr) {
  *  None
  */
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
-    int idle = -1;                                                              // used to make sure there are at most 18 threads
-    int i;                                                                      // iterator through number of push dongle
-    int j;                                                                      // iterator through each block of dongle
-    int g_idle_handler[MAXIMUM_NUMBER_OF_DEVICES] = {0};                        // An array of flags needed to indicate whether each push thread is idle
-    char addr[LENGTH_OF_MAC_ADDRESS];                                           // store the MAC address as string
-    char g_pushed_user_addr[MAXIMUM_NUMBER_OF_DEVICES][LENGTH_OF_MAC_ADDRESS];  // An array used for storing pushed users and bluetooth device addresses
+    int idle = -1;  // used to make sure there are at most 18 threads
+    int i;          // iterator through number of push dongle
+    int j;          // iterator through each block of dongle
+    char addr[LENGTH_OF_MAC_ADDRESS];  // store the MAC address as string
+    char g_pushed_user_addr[MAXIMUM_NUMBER_OF_DEVICES]
+                           [LENGTH_OF_MAC_ADDRESS];  // An array used for
+                                                     // storing pushed users and
+                                                     // bluetooth device
+                                                     // addresses
     /* Converts the bluetooth device address to string */
     ba2str(bdaddr, addr);
 
     /*
-     *  If the MAC address is already in the push list, return. Don't send the MAC address 
+     *  If the MAC address is already in the push list, return. Don't send the
+     * MAC address
      *  to push dongle again.
      */
     for (i = 0; i < NUMBER_OF_PUSH_DONGLES; i++) {
-        for (j = 0; j < MAXIMUM_NUMBER_OF_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE; j++) {
+        for (j = 0; j < MAXIMUM_NUMBER_OF_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE;
+             j++) {
             if (0 == strcmp(addr, g_pushed_user_addr[i * j + j])) {
                 return;
             }
@@ -361,13 +365,7 @@ static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi) {
  *  None
  */
 static void track_devices(bdaddr_t *bdaddr, char *filename) {
-    char ll2c[10];                                  // used for converting long long to char[]
-    char g_addr[LENGTH_OF_MAC_ADDRESS] = {0};       // An array used for tracking MAC addresses of scanned devices
-    unsigned g_initial_timestamp_of_file = 0;       // The first timestamp of the output file used for tracking scanned devices
-    unsigned g_most_recent_timestamp_of_file = 0;   // The most recent time of the output file used for tracking scanned devices
-    int g_size_of_file = 0;                         // Number of lines in the output file used for tracking scanned devices
-
-
+    char ll2c[10];  // used for converting long long to char[]
     /*
      *  Get current timestamp when tracking bluetooth devices. If file is empty,
      *  create new file with LBeacon ID.
@@ -477,7 +475,6 @@ static void start_scanning() {
     int len;
     int results;
     int i;
-    
 
     dev_id = SCAN_DONGLE;
     // printf("%d", dev_id);
@@ -590,10 +587,10 @@ static void start_scanning() {
 /*
  *  timeout_cleaner:
  *
- *  When bluetooth device's MAC address is pushed by send_to_push_dongle, the
- *  MAC address is stored in the used list and waits for timeout to be
- *  removed from list. This is continuously running in the background by a
- *  working thread alongside the main thread that is scanning for devices.
+ *  This function determines when the bluetooth device's MAC address will be
+ *  removed from the used list. The MAC address is pushed by send_to_push_dongle
+ *  and stored in the used list. This is continuously running in the background
+ *  by a working thread alongside the main thread that is scanning for devices.
  *
  *  Parameters:
  *
@@ -603,9 +600,11 @@ static void start_scanning() {
  *
  *  None
  */
-void *timeout_cleaner(void) {   //@todo function name should start with a verb
-    int i;                      // iterator to loop total number of devices
-    int j;                      // iterator to loop the length of bluetooth device's MAC address
+void *timeout_cleaner(void) {
+    /* iterator to loop the total number of devices */
+    int device_iterator;
+    /* iterator to loop the length of bluetooth device's MAC address */
+    int bluetooth_iterator;
 
     /*
      *  In the background, continuously check if it has been 20 seconds since
@@ -613,18 +612,23 @@ void *timeout_cleaner(void) {   //@todo function name should start with a verb
      *  list.
      */
     while (1) {
-        for (i = 0; i < MAXIMUM_NUMBER_OF_DEVICES; i++) {
-            if (get_system_time() - g_push_list.first_appearance_time[i] >
+        for (device_iterator = 0; device_iterator < MAXIMUM_NUMBER_OF_DEVICES;
+             device_iterator++) {
+            if (get_system_time() -
+                        g_push_list.first_appearance_time[device_iterator] >
                     TIMEOUT &&
-                true == g_push_list.is_used_device[i]) {
-                printf(
-                    "Cleaner time: %lld ms\n",
-                    get_system_time() - g_push_list.first_appearance_time[i]);
-                for (j = 0; j < LENGTH_OF_MAC_ADDRESS; j++) {
-                    g_push_list.discovered_device_addr[i][j] = 0;
+                true == g_push_list.is_used_device[device_iterator]) {
+                printf("Cleaner time: %lld ms\n",
+                       get_system_time() -
+                           g_push_list.first_appearance_time[device_iterator]);
+                for (bluetooth_iterator = 0;
+                     bluetooth_iterator < LENGTH_OF_MAC_ADDRESS;
+                     bluetooth_iterator++) {
+                    g_push_list.discovered_device_addr[device_iterator]
+                                                      [bluetooth_iterator] = 0;
                 }
-                g_push_list.first_appearance_time[i] = 0;
-                g_push_list.is_used_device[i] = false;
+                g_push_list.first_appearance_time[device_iterator] = 0;
+                g_push_list.is_used_device[device_iterator] = false;
             }
         }
     }
@@ -646,24 +650,26 @@ void *timeout_cleaner(void) {   //@todo function name should start with a verb
  *
  *  Return value:
  *
- *  ret - message filepath
+ *  return_value - message filepath
  */
 char *choose_file(char *messagetosend) {
-    DIR *groupdir;            // dirent that stores list of directories
-    struct dirent *groupent;  // dirent struct that stores directory info
-    int num_messages;         // number of messages listed in config file
-    int num_groups;           // number of groups listed in config file
-    char path[256];           // store filepath of messagetosend location
-    int count = 0;            // iterator for number of messages and groups
-    int i = 0;                // iterator for number of groups
-    char *ret;                // return value; converts path to a char *
+    DIR *groupdir;           /* dirent that stores list of directories */
+    struct dirent *groupent; /* dirent struct that stores directory info */
+    int message_count = 0;   /* iterator for number of messages and groups */
+    int number_of_messages;  /* number of messages listed in config file */
+    int number_of_groups;    /* number of groups listed in config file */
+    int group_iterator = 0;  /* iterator for number of groups */
+    char filepath[256];      /* store filepath of messagetosend location */
+    char *return_value;      /* return value; converts path to a char * */
 
     /* Convert number of groups and messages from string to integer. */
-    num_groups = atoi(g_config.num_groups);
-    num_messages = atoi(g_config.num_messages);
+    number_of_groups = atoi(g_config.number_of_groups);
+    number_of_messages = atoi(g_config.number_of_messages);
 
-    char groups[num_groups][256];      // array of buffer for group file names
-    char messages[num_messages][256];  // array of buffer for message file names
+    /* array of buffer for group file names */
+    char groups[number_of_groups][256];
+    /* array of buffer for message file names */
+    char messages[number_of_messages][256];
 
     /* Stores all the name of files and directories in groups. */
     groupdir = opendir("/home/pi/LBeacon/messages/");
@@ -671,8 +677,8 @@ char *choose_file(char *messagetosend) {
         while ((groupent = readdir(groupdir)) != NULL) {
             if (strcmp(groupent->d_name, ".") != 0 &&
                 strcmp(groupent->d_name, "..") != 0) {
-                strcpy(groups[count], groupent->d_name);
-                count++;
+                strcpy(groups[message_count], groupent->d_name);
+                message_count++;
             }
         }
         closedir(groupdir);
@@ -682,31 +688,32 @@ char *choose_file(char *messagetosend) {
         return NULL;
     }
 
-    memset(path, 0, 256);
-    count = 0;
+    memset(filepath, 0, 256);
+    message_count = 0;
 
     /* Go through each message in directory and store each file name. */
-    for (i = 0; i < num_groups; i++) {
+    for (group_iterator = 0; group_iterator < number_of_groups;
+         group_iterator++) {
         /* Concatenate strings to make file path */
-        sprintf(path, "/home/pi/LBeacon/messages/");
-        strcat(path, groups[i]);
+        sprintf(filepath, "/home/pi/LBeacon/messages/");
+        strcat(filepath, groups[group_iterator]);
         DIR *messagedir;
         struct dirent *messageent;
-        messagedir = opendir(path);
+        messagedir = opendir(filepath);
         if (messagedir) {
             while ((messageent = readdir(messagedir)) != NULL) {
                 if (strcmp(messageent->d_name, ".") != 0 &&
                     strcmp(messageent->d_name, "..") != 0) {
-                    strcpy(messages[count], messageent->d_name);
+                    strcpy(messages[message_count], messageent->d_name);
                     /* If message name found, return filepath. */
-                    if (strcmp(messages[count], messagetosend) == 0) {
-                        strcat(path, "/");
-                        strcat(path, messages[count]);
+                    if (strcmp(messages[message_count], messagetosend) == 0) {
+                        strcat(filepath, "/");
+                        strcat(filepath, messages[message_count]);
                         // printf("%s\n", path);
-                        ret = &path[0];
-                        return ret;
+                        return_value = &filepath[0];
+                        return return_value;
                     }
-                    count++;
+                    message_count++;
                 }
             }
             closedir(messagedir);
@@ -744,8 +751,9 @@ Config get_config(char *filename) {
         /* error handling */
         perror("Error opening file\n");
     } else {
-        char line[MAXIMUM_NUMBER_OF_CHARACTERS_IN_EACH_LINE_OF_CONFIG_FILE];    // stores the string of current line being read
-        int i = 0;                                                              // keeps track of which line is being processed
+        char line[MAXIMUM_BUFFER];  // stores the string of current line being
+                                    // read
+        int i = 0;  // keeps track of which line is being processed
 
         /*
          *  If there are still lines to read in the config file, read the line
@@ -757,36 +765,36 @@ Config get_config(char *filename) {
             config_message = config_message + strlen(DELIMITER);
             if (0 == i) {
                 memcpy(config.filepath, config_message, strlen(config_message));
-                config.filepath_len = strlen(config_message);
+                config.filepath_length = strlen(config_message);
             } else if (1 == i) {
                 memcpy(config.filename, config_message, strlen(config_message));
-                config.filename_len = strlen(config_message);
+                config.filename_length = strlen(config_message);
             } else if (2 == i) {
                 memcpy(config.coordinate_X, config_message,
                        strlen(config_message));
-                config.coordinate_X_len = strlen(config_message);
+                config.coordinate_X_length = strlen(config_message);
             } else if (3 == i) {
                 memcpy(config.coordinate_Y, config_message,
                        strlen(config_message));
-                config.coordinate_Y_len = strlen(config_message);
+                config.coordinate_Y_length = strlen(config_message);
             } else if (4 == i) {
                 memcpy(config.level, config_message, strlen(config_message));
-                config.level_len = strlen(config_message);
+                config.level_length = strlen(config_message);
             } else if (5 == i) {
                 memcpy(config.rssi_coverage, config_message,
                        strlen(config_message));
-                config.rssi_coverage_len = strlen(config_message);
+                config.rssi_coverage_length = strlen(config_message);
             } else if (6 == i) {
-                memcpy(config.num_groups, config_message,
+                memcpy(config.number_of_groups, config_message,
                        strlen(config_message));
-                config.num_groups_len = strlen(config_message);
+                config.number_of_groups_length = strlen(config_message);
             } else if (7 == i) {
-                memcpy(config.num_messages, config_message,
+                memcpy(config.number_of_messages, config_message,
                        strlen(config_message));
-                config.num_messages_len = strlen(config_message);
+                config.number_of_messages_length = strlen(config_message);
             } else if (8 == i) {
                 memcpy(config.uuid, config_message, strlen(config_message));
-                config.uuid_len = strlen(config_message);
+                config.uuid_length = strlen(config_message);
             }
             i++;
         }
@@ -1053,9 +1061,7 @@ int disable_advertising() {
  *
  *  None
  */
-void ctrlc_handler(int s) { 
-    bool g_done = true; 
-    }
+void ctrlc_handler(int s) { g_done = true; }
 
 /*
  *  ble_beacon:
@@ -1072,7 +1078,6 @@ void ctrlc_handler(int s) {
  */
 void *ble_beacon(void *ptr) {
     int rc = enable_advertising(300, ptr, 20);
-    bool g_done = false;    // A flag that is used to check if CTRL-C is pressed
     /* @todo */
     if (rc == 0) {
         struct sigaction sigint_handler;
@@ -1107,15 +1112,15 @@ int main(int argc, char **argv) {
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
-    g_filepath = malloc(g_config.filepath_len + g_config.filename_len);
+    g_filepath = malloc(g_config.filepath_length + g_config.filename_length);
     if (g_filepath == NULL) {
         /* error handling */
         perror("Failed to allocate memory\n");
         exit(EXIT_FAILURE);
     }
-    memcpy(g_filepath, g_config.filepath, g_config.filepath_len - 1);
-    memcpy(g_filepath + g_config.filepath_len - 1, g_config.filename,
-           g_config.filename_len - 1);
+    memcpy(g_filepath, g_config.filepath, g_config.filepath_length - 1);
+    memcpy(g_filepath + g_config.filepath_length - 1, g_config.filename,
+           g_config.filename_length - 1);
     coordinate_X.f = (float)atof(g_config.coordinate_X);
     coordinate_Y.f = (float)atof(g_config.coordinate_Y);
     level.f = (float)atof(g_config.level);
