@@ -55,11 +55,13 @@ QueueNode *q_tail = NULL;
 /*
  *  enqueue:
  *
- *  Add data to the end of the queue. @todo
+ *  This function will allocate a QueueNode with the passed in data and at the
+ *  tail, insert the node at the end of the queue. This will allow the queue to
+ *  be FIFO.
  *
  *  Parameters:
  *
- *  data - @todo
+ *  data - scanned MAC address
  *
  *  Return value:
  *
@@ -67,16 +69,24 @@ QueueNode *q_tail = NULL;
  */
 void enqueue(char data[]) {
     int i;
+
+    /* Create a node */
     struct QueueNode *temp =
         (struct QueueNode *)malloc(sizeof(struct QueueNode));
+
+    /* Copy data passed into the function into the new node */
     for (i = 0; i < 18; i++) {
         temp->data[i] = data[i];
     }
     temp->next = NULL;
+
+    /* If queue is empty, set both head and tail to the new node. */
     if (q_head == NULL && q_tail == NULL) {
         q_head = q_tail = temp;
         return;
     }
+
+    /* If queue is not empty, only set the tail to the new node. */
     q_tail->next = temp;
     q_tail = temp;
     free(temp);
@@ -85,7 +95,8 @@ void enqueue(char data[]) {
 /*
  *  dequeue:
  *
- *  Remove data from the head of the queue. @todo
+ *  This function will remove the head node of the queue. Since the head will be
+ *  removed, we need to rename the next node as the head.
  *
  *  Parameters:
  *
@@ -96,10 +107,15 @@ void enqueue(char data[]) {
  *  None
  */
 void dequeue() {
+    /* Start from the first node */
     struct QueueNode *temp = q_head;
+
+    /* If head if empty */
     if (q_head == NULL) {
         return;
     }
+
+    /* If found a node with matching data, update node */
     if (q_head == q_tail) {
         q_head = q_tail = NULL;
     } else {
@@ -111,7 +127,9 @@ void dequeue() {
 /*
  *  peek:
  *
- *  Peek at the head of the queue. @todo
+ *  This function will peek at the head of the queue. If the queue is empty,
+ *  peek() will return NULL because it doesn't exist. Otherwise, this function
+ *  will return the MAC address of the node at the front of the queue.
  *
  *  Parameters:
  *
@@ -119,12 +137,15 @@ void dequeue() {
  *
  *  Return value:
  *
- *  return_value - @todo
+ *  return_value - MAC address of the head QueueNode
  */
 char *peek() {
+    /* If head if empty */
     if (q_head == NULL) {
         return NULL;
     }
+
+    /* MAC address of the first QueueNode */
     char *return_value = &q_head->data[0];
     return return_value;
 }
@@ -132,7 +153,8 @@ char *peek() {
 /*
  *  print_queue:
  *
- *  Print all the items in the queue. @todo
+ *  This function will print all the MAC addresses in the queue. When printing,
+ *  the MAC addresses will be in order from head to tail.
  *
  *  Parameters:
  *
@@ -143,7 +165,10 @@ char *peek() {
  *  None
  */
 void print_queue() {
+    /* Start from the first node */
     struct QueueNode *temp = q_head;
+
+    /* Start from the beginning. Stop when the next node doesn't exist. */
     printf("%s", "Queue: ");
     while (temp != NULL) {
         printf("%s ", &temp->data[0]);
