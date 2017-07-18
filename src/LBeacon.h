@@ -78,60 +78,64 @@
  * CONSTANTS
  */
 
-// The filepath of the config file
+/* File path of the config file */
 #define CONFIG_FILENAME "../config/config.conf"
 
-// Read the parameter after "=" from config file
+/* Parameter that determines the start of the config file */
 #define DELIMITER "="
 
-// Length of Bluetooth MAC address
-#define LEN_OF_MAC_ADDRESS 18
+/* Length of Bluetooth MAC address */
+#define LENGTH_OF_MAC_ADDRESS 18
 
-// Maximum number of characters in each line of config file
-#define MAX_BUFFER 64
+/* Maximum number of characters in each line of config file */
+#define MAXIMUM_BUFFER 64
 
-// Transmission range limiter
+/* Transmission range limiter that only allows devices in the RSSI range to
+ * connect */
 #define RSSI_RANGE -60
 
-// The length of interval time, in milliseconds, a user object is pushed
+/* Time interval, in milliseconds, that determines if the bluetooth device can
+ * be removed from the push list */
 #define TIMEOUT 60000
 
-// Command opcode pack/unpack from HCI library
+/* Command opcode pack/unpack from HCI library */
 #define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 
-// BlueZ bluetooth protocol: flags
+/* BlueZ bluetooth extended inquiry response protocol: flags */
 #define EIR_FLAGS 0X01
 
-// BlueZ bluetooth protocol: shorten local name
+/* BlueZ bluetooth extended inquiry response protocol: shorten local name */
 #define EIR_NAME_SHORT 0x08
 
-// BlueZ bluetooth protocol: complete local name
+/* BlueZ bluetooth extended inquiry response protocol: complete local name */
 #define EIR_NAME_COMPLETE 0x09
 
-// BlueZ bluetooth protocol:: Manufacturer Specific Data
-#define EIR_MANUFACTURE_SPECIFIC 0xFF
+/* BlueZ bluetooth extended inquiry response protocol: Manufacturer Specific
+ * Data */
+#define EIR_MANUFACTURE_SPECIFIC_DATA 0xFF
 
 /*
  * GLOBAL VARIABLES
  */
 
-// The path of object push file
+/* The path of object push file */
 char *g_filepath;
 
-// The first timestamp of the output file used for tracking scanned devices
+/* The first timestamp of the output file used for tracking scanned devices */
 unsigned g_initial_timestamp_of_file = 0;
 
-// The most recent time of the output file used for tracking scanned devices
+/* The most recent time of the output file used for tracking scanned devices */
 unsigned g_most_recent_timestamp_of_file = 0;
 
-// Number of lines in the output file used for tracking scanned devices
+/* Number of lines in the output file used for tracking scanned devices */
 int g_size_of_file = 0;
 
 /*
  * UNION
  */
 
-// Transform float to Hex code
+/* This union will convert floats into Hex code which will be used in the main
+ */
 union {
     float f;
     unsigned char b[sizeof(float)];
@@ -153,85 +157,107 @@ union {
  */
 
 typedef struct Config {
-    char coordinate_X[MAX_BUFFER];
-    char coordinate_Y[MAX_BUFFER];
-    char coordinate_Z[MAX_BUFFER];
-    char filename[MAX_BUFFER];
-    char filepath[MAX_BUFFER];
-    char max_devices[MAX_BUFFER];
-    char num_groups[MAX_BUFFER];
-    char num_messages[MAX_BUFFER];
-    char num_push_dongles[MAX_BUFFER];
-    char rssi_coverage[MAX_BUFFER];
-    char uuid[MAX_BUFFER];
-    int coordinate_X_len;
-    int coordinate_Y_len;
-    int coordinate_Z_len;
-    int filename_len;
-    int filepath_len;
-    int max_devices_len;
-    int num_groups_len;
-    int num_messages_len;
-    int num_push_dongles_len;
-    int rssi_coverage_len;
-    int uuid_len;
+    /* A string with information about the X coordinate of the beacon location
+     */
+    char coordinate_X[MAXIMUM_BUFFER];
+
+    /* A string with information about the Y coordinate of the beacon location
+     */
+    char coordinate_Y[MAXIMUM_BUFFER];
+
+    /* A string with information about the Z coordinate of the beacon location
+     */
+    char coordinate_Z[MAXIMUM_BUFFER];
+
+    /* A string with information about the filename */
+    char filename[MAXIMUM_BUFFER];
+
+    /* A string with information about the filepath */
+    char filepath[MAXIMUM_BUFFER];
+
+    /* A string with information about the maximum number of devices to be
+     * handled by all PUSH dongles */
+    char maximum_number_of_devices[MAXIMUM_BUFFER];
+
+    /* A string with information about the number of groups */
+    char number_of_groups[MAXIMUM_BUFFER];
+
+    /* A string with information about the number of messages */
+    char number_of_messages[MAXIMUM_BUFFER];
+
+    /* A string with information about the number of push dongles */
+    char number_of_push_dongles[MAXIMUM_BUFFER];
+
+    /* A string with information about the required signal strength */
+    char rssi_coverage[MAXIMUM_BUFFER];
+
+    /* A string with information about the universally unique identifer */
+    char uuid[MAXIMUM_BUFFER];
+
+    /* Stores the string length needed to store the X coordinate */
+    int coordinate_X_length;
+
+    /* Stores the string length needed to store the Y coordinate */
+    int coordinate_Y_length;
+
+    /* Stores the string length needed to store the Z coordinate */
+    int coordinate_Z_length;
+
+    /* Stores the string length needed to store the filename */
+    int filename_length;
+
+    /* Stores the string length needed to store the filepath */
+    int filepath_length;
+
+    /* Stores the string length needed to store the maximum number of devices */
+    int maximum_number_of_devices_length;
+
+    /* Stores the string length needed to store the number of groups */
+    int number_of_groups_length;
+
+    /* Stores the string length needed to store the number of messages */
+    int number_of_messages_length;
+
+    /* Stores the string length needed to store the number of push dongles */
+    int number_of_push_dongles_length;
+
+    /* Stores the string length needed to store the required signal strength */
+    int rssi_coverage_length;
+
+    /* Stores the string length needed to store the universally unique identifer
+     */
+    int uuid_length;
 } Config;
 
-// Struct for storing config information from the inputted file
+/* Struct for storing config information from the input file */
 Config g_config;
 
 typedef struct ThreadStatus {
-    char scanned_mac_address[LEN_OF_MAC_ADDRESS];
+    char scanned_mac_address[LENGTH_OF_MAC_ADDRESS];
     int idle;
     bool is_waiting_to_send;
 } ThreadStatus;
 
-// Struct for storing the status of each thread
+/* An array of struct for storing information for each thread */
 ThreadStatus *g_idle_handler;
 
 /*
  * FUNCTIONS
  */
 
-// Read parameter from config file and store in Config struct
 Config get_config(char *filename);
-
-// Get the current system time
 long long get_system_time();
-
-// Check whether the user's address is being used or can be pushed to again
-bool is_used_addr(char addr[]);
-
-// Send scanned user's MAC address to push dongle
-static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi);
-
-// Check continuously and send MAC address from queue to an available thread
+bool is_used_addr(char address[]);
+static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi);
 void *queue_to_array();
-
-// Send the push message to the user's device by a working asynchronous thread
-void *send_file(void *arg);
-
-// Print the result of RSSI value for scanned MAC address
-static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi);
-
-// Scan continuously for bluetooth devices under the beacon
+void *send_file(void *ptr);
+static void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi, int rssi);
 static void start_scanning();
-
-// Remove the user's MAC address from pushed list
 void *cleanup_push_list(void);
-
-// Track scanned MAC addresses and store information in an output file
-static void track_devices(bdaddr_t *bdaddr, char *filename);
-
-// Receive filepath of designated message that will be broadcast to users
+static void track_devices(bdaddr_t *bluetooth_device_address, char *filename);
 char *choose_file(char *messagetosend);
-
-// Determines the advertising capabilities and enables advertising
+void pthread_create_error_message(int v);
 int enable_advertising(int advertising_interval, char *advertising_uuid,
                        int rssi_value);
-
-// Determines the advertising capabilities and disables advertising
 int disable_advertising();
-
-// @todo
 void *ble_beacon(void *ptr);

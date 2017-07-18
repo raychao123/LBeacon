@@ -102,7 +102,8 @@ unsigned int twoc(int in, int t) {
 /*
  *  ctrlc_handler:
  *
- *  @todo
+ *  If the user presses CTRL-C, the global variable g_done will be set to true,
+ *  and a signal will be thrown to stop running the LBeacon program.
  *
  *  Parameters:
  *

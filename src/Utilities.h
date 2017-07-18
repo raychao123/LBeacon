@@ -51,11 +51,10 @@
 // A flag that is used to check if CTRL-C is pressed
 extern bool g_done;
 
-// @todo
+/*
+ * FUNCTIONS
+ */
+
 unsigned int *uuid_str_to_data(char *uuid);
-
-// @todo
 unsigned int twoc(int in, int t);
-
-// @todo
 extern void ctrlc_handler(int s);
