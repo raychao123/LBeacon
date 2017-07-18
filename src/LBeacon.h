@@ -75,62 +75,65 @@
  * CONSTANTS
  */
 
-// The filepath of the config file
+// File path of the config file
 #define CONFIG_FILENAME "../config/config.conf"
 
-// Read the parameter after "=" from config file
+// Parameter that determines the start of the config file
 #define DELIMITER "="
 
-// Length of Bluetooth MAC addr
+// Length of Bluetooth MAC address
 #define LENGTH_OF_MAC_ADDRESS 18
 
 // Maximum number of characters in each line of config file
-#define MAX_BUFFER 64
+#define MAXIMUM_BUFFER 64
 
-// Maximum number of devices that all PUSH dongles can handle
-#define MAX_DEVICES 18
+// Maximum number of devices to be handled by all PUSH dongles
+#define MAXIMUM_NUMBER_OF_DEVICES 18
 
 // Maximum number of devices that a PUSH dongle can handle
-#define MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
+#define MAXIMUM_NUMBER_OF_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
 
 // Maximum number of the Bluetooth Object PUSH threads
-#define MAX_THREADS 18
+#define MAXIMUM_NUMBER_OF_THREADS 18
 
-// The optimal number of user devices each PUSH dongle is responsible for
-#define NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE 5
+// Optimal number of user devices handled by each PUSH dongle
+#define OPTIMAL_NUMBER_OF_DEVICES_HANDLED_BY_A_PUSH_DONGLE 5
 
 // Number of the Bluetooth dongles used for PUSH function
-#define NUM_OF_PUSH_DONGLES 2
+#define NUMBER_OF_PUSH_DONGLES 2
 
 // Device ID of the primary PUSH dongle
-#define PUSH_DONGLE_A 2
+#define PUSH_DONGLE_PRIMARY 2
 
-// Device ID of the secondar
-#define PUSH_DONGLE_B 3
+// Device ID of the secondary PUSH dongle
+#define PUSH_DONGLE_SECONDARY 3
 
 // Device ID of the SCAN dongle
 #define SCAN_DONGLE 1
 
-// Transmission range limiter
+// Transmission range limiter that only allows devices in the RSSI range to
+// connect
 #define RSSI_RANGE -60
 
-// The length of interval time, in milliseconds, a user object is pushed
+// Time interval, in milliseconds, that determines if the bluetooth device can
+// be removed from the push list
 #define TIMEOUT 20000
 
 // Command opcode pack/unpack from HCI library
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 
-// BlueZ bluetooth protocol: flags
+// BlueZ bluetooth extended inquiry response protocol: flags
 #define EIR_FLAGS 0X01
 
-// BlueZ bluetooth protocol: shorten local name
+// BlueZ bluetooth extended inquiry response protocol: shorten local name
 #define EIR_NAME_SHORT 0x08
 
-// BlueZ bluetooth protocol: complete local name
+// BlueZ bluetooth extended inquiry response protocol: complete local name
 #define EIR_NAME_COMPLETE 0x09
 
-// BlueZ bluetooth protocol:: Manufacturer Specific Data
-#define EIR_MANUFACTURE_SPECIFIC 0xFF
+// BlueZ bluetooth extended inquiry response protocol:: Manufacturer Specific
+// Data
+#define EIR_MANUFACTURE_SPECIFIC_DATA 0xFF
 
 /*
  * GLOBAL VARIABLES
@@ -145,20 +148,17 @@ bool g_done = false;
 // The path of object push file
 char *g_filepath;
 
+// An array of flags needed to indicate whether each push thread is idle
+int g_idle_handler[MAXIMUM_NUMBER_OF_DEVICES] = {0};
+
 // The first timestamp of the output file used for tracking scanned devices
 unsigned g_initial_timestamp_of_file = 0;
-
-// An array of flags needed to indicate whether each push thread is idle or not
-int g_idle_handler[MAX_DEVICES] = {0};
 
 // The most recent time of the output file used for tracking scanned devices
 unsigned g_most_recent_timestamp_of_file = 0;
 
-// An array used for handling pushed users and bluetooth device address
-char g_pushed_user_addr[MAX_DEVICES][LENGTH_OF_MAC_ADDRESS] = {0};
-
-// An array for saving the MAC address so it can be stored into database
-char g_saved_user_addr[MAX_DEVICES][LENGTH_OF_MAC_ADDRESS] = {0};
+// An array used for storing pushed users and bluetooth device addresses
+char g_pushed_user_addr[MAXIMUM_NUMBER_OF_DEVICES][LENGTH_OF_MAC_ADDRESS];
 
 // Number of lines in the output file used for tracking scanned devices
 int g_size_of_file = 0;
@@ -167,7 +167,8 @@ int g_size_of_file = 0;
  * UNION
  */
 
-// Transform float to Hex code
+// Theis union will convert floats into Hex code which will be used in the main
+// code
 union {
     float f;
     unsigned char b[sizeof(float)];
@@ -189,33 +190,145 @@ union {
  */
 
 typedef struct Config {
-    char coordinate_X[MAX_BUFFER];
-    char coordinate_Y[MAX_BUFFER];
-    char filename[MAX_BUFFER];
-    char filepath[MAX_BUFFER];
-    char level[MAX_BUFFER];
-    char rssi_coverage[MAX_BUFFER];
-    char num_groups[MAX_BUFFER];
-    char num_messages[MAX_BUFFER];
-    char uuid[MAX_BUFFER];
-    int coordinate_X_len;
-    int coordinate_Y_len;
-    int filename_len;
-    int filepath_len;
-    int level_len;
-    int rssi_coverage_len;
-    int num_groups_len;
-    int num_messages_len;
-    int uuid_len;
+    char coordinate_X
+        [MAXIMUM_BUFFER];  // A string
+                                                                     // with
+    // information
+    // about
+    // the X
+    // coordinate
+    // of the
+    // beacon
+    // location
+    // from the
+    // config
+    // file
+    char coordinate_Y
+        [MAXIMUM_BUFFER];  // A string
+                                                                     // with
+    // information
+    // about
+    // the Y
+    // coordinate
+    // of the
+    // beacon
+    // location
+    // from the
+    // config
+    // file
+    char filename
+        [MAXIMUM_BUFFER];  // A string
+                                                                     // with
+    // information
+    // about
+    // the
+    // filename
+    // from the
+    // config
+    // file
+    // from the
+    // config
+    // file
+    char filepath
+        [MAXIMUM_BUFFER];  // A string
+                                                                     // with
+    // information
+    // about
+    // the
+    // filepath
+    // from the
+    // config
+    // file
+    // from the
+    // config
+    // file
+    char level
+        [MAXIMUM_BUFFER];  // A string
+                                                                     // with
+    // information
+    // about
+    // the
+    // current
+    // level in
+    // the
+    // building
+    // from the
+    // config
+    // file
+    char rssi_coverage
+        [MAXIMUM_BUFFER];  // A string
+                                                                     // with
+    // information
+    // about
+    // the
+    // required
+    // signal
+    // strength
+    // from the
+    // config
+    // file
+    char num_groups
+        [MAXIMUM_BUFFER];  // A string
+                                                                     // with
+    // information
+    // about
+    // the
+    // number
+    // of
+    // groups
+    // from the
+    // config
+    // file
+    char num_messages
+        [MAXIMUM_BUFFER];  // A string
+                                                                     // with
+    // information
+    // about
+    // the
+    // number
+    // of
+    // messages
+    // from the
+    // config
+    // file
+    char uuid
+        [MAXIMUM_BUFFER];  // A string
+                                                                     // with
+    // information
+    // about
+    // the
+    // universally
+    // unique
+    // identifer
+    // from the
+    // config
+    // file
+    int coordinate_X_len;  // Stores the string length needed to store the X
+                           // coordinate
+    int coordinate_Y_len;  // Stores the string length needed to store the Y
+                           // coordinate
+    int filename_len;  // Stores the string length needed to store the filename
+    int filepath_len;  // Stores the string length needed to store the filepath
+    int level_len;     // Stores the string length needed to store the current
+                       // level position
+    int rssi_coverage_len;  // Stores the string length needed to store the
+                            // required signal strength
+    int num_groups_len;  // Stores the string length needed to store the number
+                         // of groups
+    int num_messages_len;  // Stores the string length needed to store the
+                           // number of messages
+    int uuid_len;  // Stores the string length needed to store the universally
+                   // unique identifer
 } Config;
 
-// Struct for storing config information from the inputted file
+// Struct for storing config information from the input file
 Config g_config;
 
 typedef struct PushList {
-    long long first_appearance_time[MAX_DEVICES];
-    char discovered_device_addr[MAX_DEVICES][LENGTH_OF_MAC_ADDRESS];
-    bool is_used_device[MAX_DEVICES];
+    long long first_appearance_time[MAXIMUM_NUMBER_OF_DEVICES];
+    char discovered_device_addr[MAXIMUM_NUMBER_OF_DEVICES]
+                               [LENGTH_OF_MAC_ADDRESS];
+    bool is_used_device[MAXIMUM_NUMBER_OF_DEVICES];
 } PushList;
 
 // Struct for storing information on users' devices discovered by each becon
@@ -228,38 +341,18 @@ typedef struct ThreadAddr {
 } ThreadAddr;
 
 // Struct for storing information for each thread
-ThreadAddr g_thread_addr[MAX_DEVICES];
+ThreadAddr g_thread_addr[MAXIMUM_NUMBER_OF_DEVICES];
 
 /*
  * FUNCTIONS
  */
-
-// Get the current system time
 long long get_system_time();
-
-// Check whether the user's address is being used or can be pushed to again
 bool is_used_addr(char addr[]);
-
-// Send the push message to the user's device by a working asynchronous thread
 void *send_file(void *ptr);
-
-// Send scanned user's MAC address to push dongle
 static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi);
-
-// Print the result of RSSI value for scanned MAC address
 static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi);
-
-// Track scanned MAC addresses and store information in an output file
 static void track_devices(bdaddr_t *bdaddr, char *filename);
-
-// Scan continuously for bluetooth devices under the beacon
 static void start_scanning();
-
-// Remove the user's MAC address from pushed list
 void *timeout_cleaner(void);
-
-// Receive filepath of designated message that will be broadcast to users
 char *choose_file(char *messagetosend);
-
-// Read parameter from config file and store in Config struct
 Config get_config(char *filename);

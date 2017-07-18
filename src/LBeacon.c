@@ -95,7 +95,7 @@ bool is_used_addr(char address[]) {
      *  If the MAC address passed into the function is already in the push list,
      *  just return true.
      */
-    for (device_iterator = 0; device_iterator < MAX_DEVICES;
+    for (device_iterator = 0; device_iterator < MAXIMUM_NUMBER_OF_DEVICES;
          device_iterator++) {
         if (0 == strcmp(address,
                         g_push_list.discovered_device_addr[device_iterator])) {
@@ -107,7 +107,7 @@ bool is_used_addr(char address[]) {
      *  If the scanned bluetooth device is not in the push list, add the
      *  MAC address to the push list.
      */
-    for (device_iterator = 0; device_iterator < MAX_DEVICES;
+    for (device_iterator = 0; device_iterator < MAXIMUM_NUMBER_OF_DEVICES;
          device_iterator++) {
         if (false == g_push_list.is_used_device[device_iterator]) {
             for (address_iterator = 0; address_iterator < LENGTH_OF_MAC_ADDRESS;
@@ -143,7 +143,8 @@ bool is_used_addr(char address[]) {
  *  None
  */
 void *send_file(void *ptr) {
-    ThreadAddr *thread_addr = (ThreadAddr *)ptr;
+    ThreadAddr *thread_address = (ThreadAddr *)ptr;
+    pthread_t tid = pthread_self();
     obexftp_client_t *client = NULL;
     char *address = NULL;
     char *filename;
@@ -151,16 +152,17 @@ void *send_file(void *ptr) {
     int device_id;
     int socket;
     int number_of_bluetooth_devices;
-    int return_value; /* if the operation failed, success is set
+    int return_value; /* if the operation failed, success is set */
 
     /*
      *  Split one half of the device IDs to one dongle and the other half to
      *  the second dongle.
      */
-    if (thread_addr->thread_id >= NUM_OF_DEVICES_IN_BLOCK_OF_PUSH_DONGLE) {
-        device_id = PUSH_DONGLE_B;
+    if (thread_address->thread_id >=
+        OPTIMAL_NUMBER_OF_DEVICES_HANDLED_BY_A_PUSH_DONGLE) {
+        device_id = PUSH_DONGLE_SECONDARY;
     } else {
-        device_id = PUSH_DONGLE_A;
+        device_id = PUSH_DONGLE_PRIMARY;
     }
 
     /*
@@ -173,9 +175,9 @@ void *send_file(void *ptr) {
         perror("Error opening socket");
         pthread_exit(NULL);
     }
-    printf("Thread number %d\n", thread_addr->thread_id);
+    printf("Thread number %d\n", thread_address->thread_id);
     long long start = get_system_time();
-    address = (char *)thread_addr->addr;
+    address = (char *)thread_address->addr;
     channel = obexftp_browse_bt_push(address);
 
     /* Extract basename from filepath */
@@ -196,11 +198,11 @@ void *send_file(void *ptr) {
     if (client == NULL) {
         /* error handling */
         perror("Error opening obexftp client\n");
-        g_idle_handler[thread_addr->thread_id] = 0;
+        g_idle_handler[thread_address->thread_id] = 0;
         for (number_of_bluetooth_devices = 0;
              number_of_bluetooth_devices < LENGTH_OF_MAC_ADDRESS;
              number_of_bluetooth_devices++) {
-            g_pushed_user_addr[thread_addr->thread_id]
+            g_pushed_user_addr[thread_address->thread_id]
                               [number_of_bluetooth_devices] = 0;
         }
         close(socket);
@@ -217,11 +219,11 @@ void *send_file(void *ptr) {
         perror("Error connecting to obexftp device\n");
         obexftp_close(client);
         client = NULL;
-        g_idle_handler[thread_addr->thread_id] = 0;
+        g_idle_handler[thread_address->thread_id] = 0;
         for (number_of_bluetooth_devices = 0;
              number_of_bluetooth_devices < LENGTH_OF_MAC_ADDRESS;
              number_of_bluetooth_devices++) {
-            g_pushed_user_addr[thread_addr->thread_id]
+            g_pushed_user_addr[thread_address->thread_id]
                               [number_of_bluetooth_devices] = 0;
         }
         close(socket);
@@ -245,11 +247,11 @@ void *send_file(void *ptr) {
     /* Close socket */
     obexftp_close(client);
     client = NULL;
-    g_idle_handler[thread_addr->thread_id] = 0;
+    g_idle_handler[thread_address->thread_id] = 0;
     for (number_of_bluetooth_devices = 0;
          number_of_bluetooth_devices < LENGTH_OF_MAC_ADDRESS;
          number_of_bluetooth_devices++) {
-        g_pushed_user_addr[thread_addr->thread_id]
+        g_pushed_user_addr[thread_address->thread_id]
                           [number_of_bluetooth_devices] = 0;
     }
     close(socket);
@@ -276,9 +278,9 @@ void *send_file(void *ptr) {
  *  None
  */
 static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
-    int idle = -1;        // used to make sure only max of 18 threads
-    int dongle_iterator;  // iterator through number of push dongle
-    int block_iterator;   // iterator through each block of dongle
+    int idle = -1;               // used to make sure only max of 18 threads
+    int dongle_iterator;         // iterator through number of push dongle
+    int block_iterator;          // iterator through each block of dongle
     char address[LENGTH_OF_MAC_ADDRESS];  // store the MAC address as string
 
     /* Converts the bluetooth device address to string */
@@ -288,20 +290,13 @@ static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
      *  If the MAC address is already in the push list, return. THe function
      *  won't send to push dongle again.
      */
-    for (dongle_iterator = 0; dongle_iterator < NUM_OF_PUSH_DONGLES;
-         dongle_iterator++) {
-        for (block_iterator = 0;
-             block_iterator < MAX_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE;
+    for (dongle_iterator = 0; dongle_iterator < NUMBER_OF_PUSH_DONGLES; dongle_iterator++) {
+        for (block_iterator = 0; block_iterator < MAXIMUM_NUMBER_OF_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE;
              block_iterator++) {
-            if (0 ==
-                strcmp(address,
-                       g_pushed_user_addr[dongle_iterator * block_iterator +
-                                          block_iterator])) {
+            if (0 == strcmp(address, g_pushed_user_addr[dongle_iterator * block_iterator + block_iterator])) {
                 return;
             }
-            if (1 != g_idle_handler[dongle_iterator * block_iterator +
-                                    block_iterator] &&
-                -1 == idle) {
+            if (1 != g_idle_handler[dongle_iterator * block_iterator + block_iterator] && -1 == idle) {
                 idle = dongle_iterator * block_iterator + block_iterator;
             }
         }
@@ -312,11 +307,8 @@ static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
         ThreadAddr *thread_address = &g_thread_addr[idle];
         g_idle_handler[idle] = 1;
         printf("%zu\n", sizeof(address) / sizeof(address[0]));
-        for (dongle_iterator = 0;
-             dongle_iterator < sizeof(address) / sizeof(address[0]);
-             dongle_iterator++) {
-            g_pushed_user_addr[idle][dongle_iterator] =
-                address[dongle_iterator];
+        for (dongle_iterator = 0; dongle_iterator < sizeof(address) / sizeof(address[0]); dongle_iterator++) {
+            g_pushed_user_addr[idle][dongle_iterator] = address[dongle_iterator];
             thread_address->addr[dongle_iterator] = address[dongle_iterator];
         }
         thread_address->thread_id = idle;
@@ -345,8 +337,7 @@ static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
  *
  *  None
  */
-static void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
-                             int rssi) {
+static void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi, int rssi) {
     char address[LENGTH_OF_MAC_ADDRESS];  // MAC address that will be printed
 
     /* Converts the bluetooth device address to string */
@@ -393,8 +384,7 @@ static void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
     unsigned timestamp = (unsigned)time(NULL);
     sprintf(long_long_to_char, "%u", timestamp);
     if (0 == g_size_of_file) {
-        FILE *file_directory =
-            fopen(filename, "w+"); /* w+ overwrites the file */
+        FILE *file_directory = fopen(filename, "w+"); /* w+ overwrites the file */
         if (file_directory == NULL) {
             /* error handling */
             perror("Error opening file");
@@ -416,14 +406,14 @@ static void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
     ba2str(bluetooth_device_address, g_addr);
     if (timestamp != g_most_recent_timestamp_of_file) {
         FILE *output;
-        char buffer[1024];
+        char file_name_buffer[1024];
         output = fopen(filename, "a+");
         if (output == NULL) {
             /* error handling */
             perror("Error opening file");
             return;
         }
-        while (fgets(buffer, sizeof(buffer), output) != NULL) {
+        while (fgets(file_name_buffer, sizeof(file_name_buffer), output) != NULL) {
         }
         fputs("\n", output);
         fputs(long_long_to_char, output);
@@ -435,16 +425,16 @@ static void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
         g_size_of_file++;
     } else {
         FILE *output;
-        char buffer[1024];
+        char file_name_buffer[1024];
         output = fopen(filename, "a+");
         if (output == NULL) {
             /* error handling */
             perror("Error opening file");
             return;
         }
-        while (fgets(buffer, sizeof(buffer), output) != NULL) {
+        while (fgets(file_name_buffer, sizeof(file_name_buffer), output) != NULL) {
         }
-        if (strstr(buffer, g_addr) == NULL) {
+        if (strstr(file_name_buffer, g_addr) == NULL) {
             fputs(", ", output);
             fputs(g_addr, output);
         }
@@ -484,8 +474,8 @@ static void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
 static void start_scanning() {
     struct hci_filter filter;
     struct pollfd file_descriptor;
-    unsigned char buffer[HCI_MAX_EVENT_SIZE];
-    unsigned char *buffer_ptr;
+    unsigned char event_buffer[HCI_MAX_EVENT_SIZE];
+    unsigned char *event_buffer_ptr;
     hci_event_hdr *event_handler;
     inquiry_cp inquiry_copy;
     inquiry_info_with_rssi *info_rssi;
@@ -493,7 +483,7 @@ static void start_scanning() {
     bool cancelled = false;
     int device_id = 0;
     int socket = 0;
-    int buffer_length;
+    int event_buffer_length;
     int results;
     int results_iterator;
 
@@ -536,8 +526,8 @@ static void start_scanning() {
 
     printf("Starting inquiry with RSSI...\n");
 
-    if (0 > hci_send_cmd(socket, OGF_LINK_CTL, OCF_INQUIRY, INQUIRY_CP_SIZE,
-                         &inquiry_copy)) {
+    if (0 >
+        hci_send_cmd(socket, OGF_LINK_CTL, OCF_INQUIRY, INQUIRY_CP_SIZE, &inquiry_copy)) {
         /* error handling */
         perror("Error starting inquiry");
         return;
@@ -551,25 +541,24 @@ static void start_scanning() {
 
         /* Poll the Bluetooth device for an event */
         if (0 < poll(&file_descriptor, 1, -1)) {
-            buffer_length = read(socket, buffer, sizeof(buffer));
+            event_buffer_length = read(socket, event_buffer, sizeof(event_buffer));
 
-            if (0 > buffer_length) {
+            if (0 > event_buffer_length) {
                 continue;
-            } else if (0 == buffer_length) {
+            } else if (0 == event_buffer_length) {
                 break;  //@todo need to put it on a separate line
             }
-            event_handler = (void *)(buffer + 1);
-            buffer_ptr = buffer + (1 + HCI_EVENT_HDR_SIZE);
 
-            results = buffer_ptr[0];
+            event_handler = (void *)(event_buffer + 1);
+            event_buffer_ptr = event_buffer + (1 + HCI_EVENT_HDR_SIZE);
+
+            results = event_buffer_ptr[0];
 
             switch (event_handler->evt) {
                 /* Scanned device with no RSSI value. */
                 case EVT_INQUIRY_RESULT: {
-                    for (results_iterator = 0; results_iterator < results;
-                         results_iterator++) {
-                        info = (void *)buffer_ptr +
-                               (sizeof(*info) * results_iterator) + 1;
+                    for (results_iterator = 0; results_iterator < results; results_iterator++) {
+                        info = (void *)event_buffer_ptr + (sizeof(*info) * results_iterator) + 1;
                         print_RSSI_value(&info->bdaddr, 0, 0);
                         track_devices(&info->bdaddr, "output.txt");
                     }
@@ -580,10 +569,8 @@ static void start_scanning() {
                  *  message to bluetooth device.
                  */
                 case EVT_INQUIRY_RESULT_WITH_RSSI: {
-                    for (results_iterator = 0; results_iterator < results;
-                         results_iterator++) {
-                        info_rssi = (void *)buffer_ptr +
-                                    (sizeof(*info_rssi) * results_iterator) + 1;
+                    for (results_iterator = 0; results_iterator < results; results_iterator++) {
+                        info_rssi = (void *)event_buffer_ptr + (sizeof(*info_rssi) * results_iterator) + 1;
                         track_devices(&info_rssi->bdaddr, "output.txt");
                         print_RSSI_value(&info_rssi->bdaddr, 1,
                                          info_rssi->rssi);
@@ -634,7 +621,7 @@ void *timeout_cleaner(void) {  //@todo function name should start with a verb
      *  list.
      */
     while (1) {
-        for (i = 0; i < MAX_DEVICES; i++) {
+        for (i = 0; i < MAXIMUM_NUMBER_OF_DEVICES; i++) {
             if (get_system_time() - g_push_list.first_appearance_time[i] >
                     TIMEOUT &&
                 true == g_push_list.is_used_device[i]) {
@@ -765,9 +752,11 @@ Config get_config(char *filename) {
         /* error handling */
         perror("Error opening file\n");
     } else {
-        char config_setting[MAX_BUFFER];  // stores the string of current line
-                                          // being read
-        int line = 0;  // keeps track of which line is being processed
+        /* stores the string of current line being read */
+        char config_setting[MAXIMUM_BUFFER];  
+        
+        /* keeps track of which line is being processed */ 
+        int line = 0;   
 
         /*
          *  If there are still lines to read in the config file, read the line
@@ -775,7 +764,7 @@ Config get_config(char *filename) {
          */
         while (fgets(config_setting, sizeof(config_setting), file) != NULL) {
             char *config_message;
-            config_message = strstr((char *)line, DELIMITER);
+            config_message = strstr((char *)config_setting, DELIMITER);
             config_message = config_message + strlen(DELIMITER);
             if (0 == line) {
                 memcpy(config.filepath, config_message, strlen(config_message));
@@ -834,8 +823,7 @@ Config get_config(char *filename) {
 unsigned int *uuid_str_to_data(char *uuid) {
     char conversion[] = "0123456789ABCDEF";
     int uuid_length = strlen(uuid);
-    unsigned int *data =
-        (unsigned int *)malloc(sizeof(unsigned int) * uuid_length);
+    unsigned int *data = (unsigned int *)malloc(sizeof(unsigned int) * uuid_length);
 
     if (data == NULL) {
         /* error handling */
@@ -846,11 +834,9 @@ unsigned int *uuid_str_to_data(char *uuid) {
     unsigned int *data_pointer = data;
     char *uuid_counter = uuid;
 
-    for (; uuid_counter < uuid + uuid_length;
-         data_pointer++, uuid_counter += 2) {
-        *data_pointer =
-            ((strchr(conversion, toupper(*conversion)) - conversion) * 16) +
-            (strchr(conversion, toupper(*(uuid_counter + 1))) - conversion);
+    for (; uuid_counter < uuid + uuid_length; data_pointer++, uuid_counter += 2) {
+        *data_pointer = ((strchr(conversion, toupper(*uuid_counter)) - conversion) * 16) +
+              (strchr(conversion, toupper(*(uuid_counter + 1))) - conversion);
     }
 
     return data;
@@ -899,8 +885,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
         exit(EXIT_FAILURE);
     }
     le_set_advertising_parameters_cp advertising_parameters_copy;
-    memset(&advertising_parameters_copy, 0,
-           sizeof(advertising_parameters_copy));
+    memset(&advertising_parameters_copy, 0, sizeof(advertising_parameters_copy));
     advertising_parameters_copy.min_interval = htobs(advertising_interval);
     advertising_parameters_copy.max_interval = htobs(advertising_interval);
     advertising_parameters_copy.chan_map = 7;
@@ -915,8 +900,8 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     request.rparam = &status;
     request.rlen = 1;
 
-    int ret = hci_send_req(device_handle, &request, 1000);
-    if (ret < 0) {
+    int return_value = hci_send_req(device_handle, &request, 1000);
+    if (return_value < 0) {
         /* error handling */
         hci_close_dev(device_handle);
         fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
@@ -935,9 +920,9 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     request.rparam = &status;
     request.rlen = 1;
 
-    ret = hci_send_req(device_handle, &request, 1000);
+    return_value = hci_send_req(device_handle, &request, 1000);
 
-    if (ret < 0) {
+    if (return_value < 0) {
         /* error handling */
         hci_close_dev(device_handle);
         fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
@@ -948,53 +933,40 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     memset(&advertisement_data_copy, 0, sizeof(advertisement_data_copy));
 
     uint8_t segment_length = 1;
-    advertisement_data_copy
-        .data[advertisement_data_copy.length + segment_length] =
-        htobs(EIR_FLAGS);
+    advertisement_data_copy.data[advertisement_data_copy.length + segment_length] = htobs(EIR_FLAGS);
     segment_length++;
-    advertisement_data_copy
-        .data[advertisement_data_copy.length + segment_length] = htobs(0x1A);
+    advertisement_data_copy.data[advertisement_data_copy.length + segment_length] = htobs(0x1A);
     segment_length++;
-    advertisement_data_copy.data[advertisement_data_copy.length] =
-        htobs(segment_length - 1);
+    advertisement_data_copy.data[advertisement_data_copy.length] = htobs(segment_length - 1);
 
     advertisement_data_copy.length += segment_length;
 
     segment_length = 1;
-    advertisement_data_copy
-        .data[advertisement_data_copy.length + segment_length] =
-        htobs(EIR_MANUFACTURE_SPECIFIC);
+    advertisement_data_copy.data[advertisement_data_copy.length + segment_length] =
+        htobs(EIR_MANUFACTURE_SPECIFIC_DATA);
     segment_length++;
-    advertisement_data_copy
-        .data[advertisement_data_copy.length + segment_length] = htobs(0x4C);
+    advertisement_data_copy.data[advertisement_data_copy.length + segment_length] = htobs(0x4C);
     segment_length++;
-    advertisement_data_copy
-        .data[advertisement_data_copy.length + segment_length] = htobs(0x00);
+    advertisement_data_copy.data[advertisement_data_copy.length + segment_length] = htobs(0x00);
     segment_length++;
-    advertisement_data_copy
-        .data[advertisement_data_copy.length + segment_length] = htobs(0x02);
+    advertisement_data_copy.data[advertisement_data_copy.length + segment_length] = htobs(0x02);
     segment_length++;
-    advertisement_data_copy
-        .data[advertisement_data_copy.length + segment_length] = htobs(0x15);
+    advertisement_data_copy.data[advertisement_data_copy.length + segment_length] = htobs(0x15);
     segment_length++;
 
     unsigned int *uuid = uuid_str_to_data(advertising_uuid);
-    int i;
-    for (i = 0; i < strlen(advertising_uuid) / 2; i++) {
-        advertisement_data_copy
-            .data[advertisement_data_copy.length + segment_length] =
-            htobs(uuid[i]);
+    int advertising_uuid_iterator;
+    for (advertising_uuid_iterator = 0; advertising_uuid_iterator < strlen(advertising_uuid) / 2; advertising_uuid_iterator++) {
+        advertisement_data_copy.data[advertisement_data_copy.length + segment_length] = htobs(uuid[advertising_uuid_iterator]);
         segment_length++;
     }
 
     /* RSSI calibration */
-    advertisement_data_copy
-        .data[advertisement_data_copy.length + segment_length] =
+    advertisement_data_copy.data[advertisement_data_copy.length + segment_length] =
         htobs(twoc(rssi_value, 8));
     segment_length++;
 
-    advertisement_data_copy.data[advertisement_data_copy.length] =
-        htobs(segment_length - 1);
+    advertisement_data_copy.data[advertisement_data_copy.length] = htobs(segment_length - 1);
 
     advertisement_data_copy.length += segment_length;
 
@@ -1006,11 +978,11 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     request.rparam = &status;
     request.rlen = 1;
 
-    ret = hci_send_req(device_handle, &request, 1000);
+    return_value = hci_send_req(device_handle, &request, 1000);
 
     hci_close_dev(device_handle);
 
-    if (ret < 0) {
+    if (return_value < 0) {
         /* error handling */
         fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
         return (1);
@@ -1045,25 +1017,25 @@ int disable_advertising() {
         return (1);
     }
 
-    le_set_advertise_enable_cp advertise_cp;
+    le_set_advertise_enable_cp advertisement_copy;
     uint8_t status;
 
-    memset(&advertise_cp, 0, sizeof(advertise_cp));
+    memset(&advertisement_copy, 0, sizeof(advertisement_copy));
 
-    struct hci_request rq;
-    memset(&rq, 0, sizeof(rq));
-    rq.ogf = OGF_LE_CTL;
-    rq.ocf = OCF_LE_SET_ADVERTISE_ENABLE;
-    rq.cparam = &advertise_cp;
-    rq.clen = LE_SET_ADVERTISE_ENABLE_CP_SIZE;
-    rq.rparam = &status;
-    rq.rlen = 1;
+    struct hci_request request;
+    memset(&request, 0, sizeof(request));
+    request.ogf = OGF_LE_CTL;
+    request.ocf = OCF_LE_SET_ADVERTISE_ENABLE;
+    request.cparam = &advertisement_copy;
+    request.clen = LE_SET_ADVERTISE_ENABLE_CP_SIZE;
+    request.rparam = &status;
+    request.rlen = 1;
 
-    int ret = hci_send_req(device_handle, &rq, 1000);
+    int return_value = hci_send_req(device_handle, &request, 1000);
 
     hci_close_dev(device_handle);
 
-    if (ret < 0) {
+    if (return_value < 0) {
         /* error handling */
         fprintf(stderr, "Can't set advertise mode: %s (%d)\n", strerror(errno),
                 errno);
@@ -1086,13 +1058,13 @@ int disable_advertising() {
  *
  *  Parameters:
  *
- *  s - @todo
+ *  stop - @todo
  *
  *  Return value:
  *
  *  None
  */
-void ctrlc_handler(int s) { g_done = true; }
+void ctrlc_handler(int stop) { g_done = true; }
 
 /*
  *  ble_beacon:
@@ -1107,11 +1079,11 @@ void ctrlc_handler(int s) { g_done = true; }
  *
  *  None
  */
-void *ble_beacon(void *ptr) {
-    int rc = enable_advertising(300, ptr, 20);
+void *ble_beacon(void *thread_pointer) {
+    int enable_advertising_success = enable_advertising(300, thread_pointer, 20);
 
     /* @todo */
-    if (rc == 0) {
+    if (enable_advertising_success == 0) {
         struct sigaction sigint_handler;
         sigint_handler.sa_handler = ctrlc_handler;
         sigemptyset(&sigint_handler.sa_mask);
@@ -1140,7 +1112,7 @@ int main(int argc, char **argv) {
     char hex_c[32];                // buffer that contains the local of beacon
     pthread_t timeout_cleaner_id;  // timeout_cleaner thread ID
     pthread_t ble_beacon_id;       // ble_beacon thread ID
-    int i;                         // iterator to loop through push list
+    int push_list_iterator;        // iterator to loop through push list
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
@@ -1179,8 +1151,8 @@ int main(int argc, char **argv) {
     }
 
     /* Reset the device queue */
-    for (i = 0; i < MAX_DEVICES; i++) {
-        g_push_list.is_used_device[i] = false;
+    for (push_list_iterator = 0; push_list_iterator < MAXIMUM_NUMBER_OF_DEVICES; push_list_iterator++) {
+        g_push_list.is_used_device[push_list_iterator] = false;
     }
 
     /* Start scanning for devices */
