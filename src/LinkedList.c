@@ -67,7 +67,7 @@ LinkedListNode *ll_current = NULL;
  *  None
  */
 void insert_first(PushList data) {
-    int i;
+    int iterator;
 
     /* Create a node */
     struct LinkedListNode *link =
@@ -75,8 +75,8 @@ void insert_first(PushList data) {
 
     /* Copy data passed into the function into the new node */
     link->data.initial_scanned_time = data.initial_scanned_time;
-    for (i = 0; i < 18; i++) {
-        link->data.scanned_mac_addr[i] = data.scanned_mac_addr[i];
+    for (iterator = 0; iterator < 18; iterator++) {
+        link->data.scanned_mac_addr[iterator] = data.scanned_mac_addr[iterator];
     }
 
     /* Point it to old first node and point first to new first node */
