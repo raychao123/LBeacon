@@ -120,7 +120,7 @@
 #define TIMEOUT 20000
 
 /* Command opcode pack/unpack from HCI library */
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 
 /* BlueZ bluetooth extended inquiry response protocol: flags */
 #define EIR_FLAGS 0X01
@@ -281,5 +281,6 @@ static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi);
 static void track_devices(bdaddr_t *bdaddr, char *filename);
 static void start_scanning();
 void *timeout_cleaner(void);
+void pthread_create_error_message(int v);
 char *choose_file(char *messagetosend);
 Config get_config(char *filename);

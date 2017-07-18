@@ -46,6 +46,28 @@
 #include "LBeacon.h"
 
 /*
+ *  pthread_create_error_message:
+ *
+ *  Print error message when creating a pthread @todo
+ *
+ *  Parameters:
+ *   
+ *  v - return value of the pthread_create function
+ *
+ *  Return value:
+ *
+ *  None
+ */
+void pthread_create_error_message(int v){
+    if(v == 1)
+        perror("[EPERM] Operation not permitted");
+    else if(v == 11)
+        perror("[EAGAIN] Resource temporarily unavailable");
+    else if(v == 22)
+        perror("[EINAL] Invalid argument");
+}
+
+/*
  *  get_system_time:
  *
  *  This helper function fetches the current time according to the system clock
@@ -197,7 +219,7 @@ void *send_file(void *ptr) {
     printf("time: %lld ms\n", end - start);
     if (client == NULL) {
         /* error handling */
-        perror("Error opening obexftp client\n");
+        perror("Error opening obexftp client");
         g_idle_handler[thread_address->thread_id] = 0;
         for (number_of_bluetooth_devices = 0;
              number_of_bluetooth_devices < LENGTH_OF_MAC_ADDRESS;
@@ -216,7 +238,7 @@ void *send_file(void *ptr) {
      * handling. */
     if (0 > return_value) {
         /* error handling */
-        perror("Error connecting to obexftp device\n");
+        perror("Error connecting to obexftp device");
         obexftp_close(client);
         client = NULL;
         g_idle_handler[thread_address->thread_id] = 0;
@@ -234,14 +256,14 @@ void *send_file(void *ptr) {
     return_value = obexftp_put_file(client, g_filepath, filename);
     if (0 > return_value) {
         /* error handling */
-        perror("Error putting file\n");
+        perror("Error putting file");
     }
 
     /* Disconnect connection */
     return_value = obexftp_disconnect(client);
     if (0 > return_value) {
         /* error handling */
-        perror("Error disconnecting the client\n");
+        perror("Error disconnecting the client");
     }
 
     /* Close socket */
@@ -282,6 +304,7 @@ static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
     int dongle_iterator;         // iterator through number of push dongle
     int block_iterator;          // iterator through each block of dongle
     char address[LENGTH_OF_MAC_ADDRESS];  // store the MAC address as string
+    int return_value;            // pthread create return value
 
     /* Converts the bluetooth device address to string */
     ba2str(bluetooth_device_address, address);
@@ -311,11 +334,15 @@ static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
             g_pushed_user_addr[idle][dongle_iterator] = address[dongle_iterator];
             thread_address->addr[dongle_iterator] = address[dongle_iterator];
         }
+
         thread_address->thread_id = idle;
-        if (pthread_create(&g_thread_addr[idle].thread, NULL, send_file,
-                           &g_thread_addr[idle])) {
+       	return_value = pthread_create(&g_thread_addr[idle].thread, NULL, send_file,
+                           &g_thread_addr[idle]);
+	if(return_value != 0){
             /* error handling */
-            perror("Error with send_file using pthread_create\n");
+	    perror("Error with send_file using pthread_create");
+	    pthread_create_error_message(return_value);
+	    /* TODO */
         }
     }
 }
@@ -504,6 +531,7 @@ static void start_scanning() {
     if (0 > setsockopt(socket, SOL_HCI, HCI_FILTER, &filter, sizeof(filter))) {
         /* error handling */
         perror("Error setting HCI filter");
+	hci_close_dev(socket);
         return;
     }
     hci_write_inquiry_mode(socket, 0x01, 10);
@@ -757,7 +785,7 @@ Config get_config(char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         /* error handling */
-        perror("Error opening file\n");
+        perror("Error opening file");
     } else {
         /* stores the string of current line being read */
         char config_setting[MAXIMUM_BUFFER];  
@@ -834,7 +862,7 @@ unsigned int *uuid_str_to_data(char *uuid) {
 
     if (data == NULL) {
         /* error handling */
-        perror("Failed to allocate memory\n");
+        perror("Failed to allocate memory");
         return NULL;
     }
 
@@ -888,8 +916,8 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     int device_handle = 0;
     if ((device_handle = hci_open_dev(device_id)) < 0) {
         /* error handling */
-        perror("Error opening device\n");
-        exit(EXIT_FAILURE);
+        perror("Error opening device");
+        return (1);
     }
     le_set_advertising_parameters_cp advertising_parameters_copy;
     memset(&advertising_parameters_copy, 0, sizeof(advertising_parameters_copy));
@@ -1020,7 +1048,7 @@ int disable_advertising() {
     int device_handle = 0;
     if ((device_handle = hci_open_dev(device_id)) < 0) {
         /* error handling */
-        perror("Could not open device\n");
+        perror("Could not open device");
         return (1);
     }
 
@@ -1098,18 +1126,18 @@ void *ble_beacon(void *thread_pointer) {
 
         if (sigaction(SIGINT, &sigint_handler, NULL) == -1) {
             /* error handling */
-            perror("sigaction error\n");
-            exit(EXIT_FAILURE);
+            perror("sigaction error");
+            return;
         }
 
-        perror("Hit ctrl-c to stop advertising\n");
+        perror("Hit ctrl-c to stop advertising");
 
         while (!g_done) {
             sleep(1);
         }
 
         /* When signal received, disable message advertising */
-        perror("Shutting down\n");
+        perror("Shutting down");
         disable_advertising();
     }
 }
@@ -1120,14 +1148,15 @@ int main(int argc, char **argv) {
     pthread_t timeout_cleaner_id;  // timeout_cleaner thread ID
     pthread_t ble_beacon_id;       // ble_beacon thread ID
     int push_list_iterator;        // iterator to loop through push list
+    int return_value;                        // pthread create return value
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
     g_filepath = malloc(g_config.filepath_length + g_config.filename_length);
     if (g_filepath == NULL) {
         /* error handling */
-        perror("Failed to allocate memory\n");
-        exit(EXIT_FAILURE);
+        perror("Failed to allocate memory");
+        return -1;
     }
     memcpy(g_filepath, g_config.filepath, g_config.filepath_length - 1);
     memcpy(g_filepath + g_config.filepath_length - 1, g_config.filename,
@@ -1143,18 +1172,22 @@ int main(int argc, char **argv) {
             coordinate_Y.b[2], coordinate_Y.b[3]);
 
     /* Device cleaner */
-    if (pthread_create(&timeout_cleaner_id, NULL, (void *)timeout_cleaner,
-                       NULL)) {
+    return_value = pthread_create(&timeout_cleaner_id, NULL, (void *)timeout_cleaner,
+                       NULL);
+    if(return_value != 0){
         /* error handling */
-        perror("Error with timeout_cleaner using pthread_create\n");
-        return -1;
+        perror("Error with timeout_cleaner using pthread_create");
+	pthread_create_error_message(return_value);
+	pthread_exit(NULL);
     }
 
     /* Enable message advertising to BLE bluetooth devices */
-    if (pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c)) {
+    return_value = pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c);
+    if(return_value != 0) {
         /* error handling */
-        perror("Error with ble_beacon using pthread_create\n");
-        return -1;
+        perror("Error with ble_beacon using pthread_create");
+	pthread_create_error_message(return_value);
+	pthread_exit(NULL);
     }
 
     /* Reset the device queue */
