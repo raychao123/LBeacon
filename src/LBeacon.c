@@ -1118,7 +1118,7 @@ int main(int argc, char **argv) {
     char hex_c[32];                // buffer that contains the local of beacon
     pthread_t timeout_cleaner_id;  // timeout_cleaner thread ID
     pthread_t ble_beacon_id;       // ble_beacon thread ID
-    int push_list_iterator;                         // iterator to loop through push list
+    int push_list_iterator;        // iterator to loop through push list
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
