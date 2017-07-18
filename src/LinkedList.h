@@ -49,7 +49,7 @@
 // Struct for storing scanned timestamp and MAC address of bluetooth device
 typedef struct PushList {
     long long initial_scanned_time;
-    char scanned_mac_addr[18];
+    char scanned_mac_address[18];
 } PushList;
 
 // Struct for each node in the linked list; data is a PushList struct

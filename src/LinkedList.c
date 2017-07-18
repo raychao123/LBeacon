@@ -67,7 +67,7 @@ LinkedListNode *ll_current = NULL;
  *  None
  */
 void insert_first(PushList data) {
-    int iterator;
+    int mac_address;
 
     /* Create a node */
     struct LinkedListNode *link =
@@ -75,8 +75,9 @@ void insert_first(PushList data) {
 
     /* Copy data passed into the function into the new node */
     link->data.initial_scanned_time = data.initial_scanned_time;
-    for (iterator = 0; iterator < 18; iterator++) {
-        link->data.scanned_mac_addr[iterator] = data.scanned_mac_addr[iterator];
+    for (mac_address = 0; mac_address < 18; mac_address++) {
+        link->data.scanned_mac_address[mac_address] =
+            data.scanned_mac_address[mac_address];
     }
 
     /* Point it to old first node and point first to new first node */
@@ -112,8 +113,8 @@ void delete_node(PushList data) {
     }
 
     /* Go through list */
-    while (strcmp(ll_current->data.scanned_mac_addr, data.scanned_mac_addr) !=
-           0) {
+    while (strcmp(ll_current->data.scanned_mac_address,
+                  data.scanned_mac_address) != 0) {
         /* If last node, return; else store reference to ll_current and move to
          * the next node */
         if (ll_current->next == NULL) {
@@ -185,7 +186,7 @@ void print_linked_list() {
     /* Start from the beginning. Stop when the next node doesn't exist. */
     printf("%s", "Linked List: ");
     while (ptr != NULL) {
-        printf("%s ", &ptr->data.scanned_mac_addr[0]);
+        printf("%s ", &ptr->data.scanned_mac_address[0]);
         ptr = ptr->next;
     }
     printf("\n");

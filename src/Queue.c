@@ -68,15 +68,15 @@ QueueNode *q_tail = NULL;
  *  None
  */
 void enqueue(char data[]) {
-    int iterator;
+    int mac_address;
 
     /* Create a node */
     struct QueueNode *temp =
         (struct QueueNode *)malloc(sizeof(struct QueueNode));
 
     /* Copy data passed into the function into the new node */
-    for (iterator = 0; iterator < 18; iterator++) {
-        temp->data[iterator] = data[iterator];
+    for (mac_address = 0; mac_address < 18; mac_address++) {
+        temp->data[mac_address] = data[mac_address];
     }
     temp->next = NULL;
 

@@ -181,7 +181,7 @@ typedef struct Config {
 Config g_config;
 
 typedef struct ThreadStatus {
-    char scanned_mac_addr[LEN_OF_MAC_ADDRESS];
+    char scanned_mac_address[LEN_OF_MAC_ADDRESS];
     int idle;
     bool is_waiting_to_send;
 } ThreadStatus;

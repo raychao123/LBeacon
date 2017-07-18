@@ -93,7 +93,7 @@ long long get_system_time() {
 bool is_used_addr(char addr[]) {
     LinkedListNode *temp = ll_head;
     while (temp != NULL) {
-        if (0 == strcmp(addr, temp->data.scanned_mac_addr)) {
+        if (0 == strcmp(addr, temp->data.scanned_mac_address)) {
             return true;
         }
         temp = temp->next;
@@ -156,7 +156,7 @@ void *send_file(void *arg) {
                     /* handle error */
                     perror("Error opening socket");
                     for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-                        g_idle_handler[i].scanned_mac_addr[j] = 0;
+                        g_idle_handler[i].scanned_mac_address[j] = 0;
                     }
                     g_idle_handler[i].idle = -1;
                     g_idle_handler[i].is_waiting_to_send = false;
@@ -164,7 +164,7 @@ void *send_file(void *arg) {
                 }
                 // printf("Thread number %d\n", thread_addr->thread_id);
                 long long start = get_system_time();
-                addr = (char *)g_idle_handler[i].scanned_mac_addr;
+                addr = (char *)g_idle_handler[i].scanned_mac_address;
                 channel = obexftp_browse_bt_push(addr);
 
                 /* Extract basename from filepath */
@@ -187,7 +187,7 @@ void *send_file(void *arg) {
                     /* handle error */
                     fprintf(stderr, "Error opening obexftp client\n");
                     for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-                        g_idle_handler[i].scanned_mac_addr[j] = 0;
+                        g_idle_handler[i].scanned_mac_address[j] = 0;
                     }
                     g_idle_handler[i].idle = -1;
                     g_idle_handler[i].is_waiting_to_send = false;
@@ -204,7 +204,7 @@ void *send_file(void *arg) {
                     obexftp_close(cli);
                     cli = NULL;
                     for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-                        g_idle_handler[i].scanned_mac_addr[j] = 0;
+                        g_idle_handler[i].scanned_mac_address[j] = 0;
                     }
                     g_idle_handler[i].idle = -1;
                     g_idle_handler[i].is_waiting_to_send = false;
@@ -230,7 +230,7 @@ void *send_file(void *arg) {
                 obexftp_close(cli);
                 cli = NULL;
                 for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-                    g_idle_handler[i].scanned_mac_addr[j] = 0;
+                    g_idle_handler[i].scanned_mac_address[j] = 0;
                 }
                 g_idle_handler[i].idle = -1;
                 g_idle_handler[i].is_waiting_to_send = false;
@@ -264,7 +264,7 @@ void *queue_to_array() {
             char *addr = peek();
             if (g_idle_handler[i].idle == -1 && addr != NULL) {
                 for (j = 0; j < 18; j++) {
-                    g_idle_handler[i].scanned_mac_addr[j] = addr[j];
+                    g_idle_handler[i].scanned_mac_address[j] = addr[j];
                 }
                 dequeue();
                 g_idle_handler[i].idle = i;
@@ -304,7 +304,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
         PushList data;
         data.initial_scanned_time = get_system_time();
         for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
-            data.scanned_mac_addr[i] = addr[i];
+            data.scanned_mac_address[i] = addr[i];
         }
         insert_first(data);
         enqueue(addr);
@@ -1021,8 +1021,8 @@ int main(int argc, char **argv) {
     }
     for (i = 0; i < max_devices; i++) {
         for (j = 0; j < LEN_OF_MAC_ADDRESS; j++) {
-            g_idle_handler[i].scanned_mac_addr[j] = 0;
-            // memcpy(g_idle_handler[i].scanned_mac_addr, &a, 18);
+            g_idle_handler[i].scanned_mac_address[j] = 0;
+            // memcpy(g_idle_handler[i].scanned_mac_address, &a, 18);
         }
         g_idle_handler[i].idle = -1;
         g_idle_handler[i].is_waiting_to_send = false;
