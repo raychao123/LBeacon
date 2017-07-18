@@ -259,7 +259,7 @@ void *send_file(void *ptr) {
         g_pushed_user_addr[thread_addr->thread_id][i] = 0;
     }
     close(socket);
-    pthread_exit(0);
+    pthread_exit(0); /* TODO close socket function */
 }
 
 /*
@@ -514,6 +514,7 @@ static void start_scanning() {
     if (0 > setsockopt(socket, SOL_HCI, HCI_FILTER, &flt, sizeof(flt))) {
         /* error handling */
         perror("Error setting HCI filter");
+	hci_close_dev(socket);
         return;
     }
     hci_write_inquiry_mode(socket, 0x01, 10);

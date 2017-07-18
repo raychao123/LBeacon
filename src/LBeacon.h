@@ -264,3 +264,6 @@ char *choose_file(char *messagetosend);
 
 // Read parameter from config file and store in Config struct
 Config get_config(char *filename);
+
+// Print error message when creating a pthread
+void pthread_create_error_message(int v);
