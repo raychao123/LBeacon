@@ -97,7 +97,7 @@
 #define TIMEOUT 60000
 
 // Command opcode pack/unpack from HCI library
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
 
 // BlueZ bluetooth protocol: flags
 #define EIR_FLAGS 0X01
@@ -193,6 +193,9 @@ ThreadStatus *g_idle_handler;
  * FUNCTIONS
  */
 
+// Read parameter from config file and store in Config struct
+Config get_config(char *filename);
+
 // Get the current system time
 long long get_system_time();
 
@@ -222,9 +225,6 @@ static void track_devices(bdaddr_t *bdaddr, char *filename);
 
 // Receive filepath of designated message that will be broadcast to users
 char *choose_file(char *messagetosend);
-
-// Read parameter from config file and store in Config struct
-Config get_config(char *filename);
 
 // Determines the advertising capabilities and enables advertising
 int enable_advertising(int advertising_interval, char *advertising_uuid,

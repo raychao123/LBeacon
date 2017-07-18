@@ -46,6 +46,88 @@
 #include "LBeacon.h"
 
 /*
+ *  get_config:
+ *
+ *  While not end of file, read config file line by line and store data into the
+ *  global variable of a Config struct. The variable i is used to know which
+ *  line is being processed.
+ *
+ *  Parameters:
+ *
+ *  filename - the name of the config file that stores all the beacon data
+ *
+ *  Return value:
+ *
+ *  config - Config struct including filepath, coordinates, etc.
+ */
+Config get_config(char *filename) {
+    Config config;  // return variable is struct that contains all data
+
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        /* handle error */
+        fprintf(stderr, "Error opening file\n");
+    } else {
+        char line[MAX_BUFFER];  // stores the string of current line being read
+        int i = 0;              // keeps track of which line being processed
+
+        /* If there are still lines to read in the config file, read the line
+         * and store each information into the config struct. */
+        while (fgets(line, sizeof(line), file) != NULL) {
+            char *config_message;
+            config_message = strstr((char *)line, DELIMITER);
+            config_message = config_message + strlen(DELIMITER);
+            if (0 == i) {
+                memcpy(config.coordinate_X, config_message,
+                       strlen(config_message));
+                config.coordinate_X_len = strlen(config_message);
+            } else if (1 == i) {
+                memcpy(config.coordinate_Y, config_message,
+                       strlen(config_message));
+                config.coordinate_Y_len = strlen(config_message);
+            } else if (2 == i) {
+                memcpy(config.coordinate_Z, config_message,
+                       strlen(config_message));
+                config.coordinate_Z_len = strlen(config_message);
+            } else if (3 == i) {
+                memcpy(config.filename, config_message, strlen(config_message));
+                config.filename_len = strlen(config_message);
+            } else if (4 == i) {
+                memcpy(config.filepath, config_message, strlen(config_message));
+                config.filepath_len = strlen(config_message);
+            } else if (5 == i) {
+                memcpy(config.max_devices, config_message,
+                       strlen(config_message));
+                config.max_devices_len = strlen(config_message);
+            } else if (6 == i) {
+                memcpy(config.num_groups, config_message,
+                       strlen(config_message));
+                config.num_groups_len = strlen(config_message);
+            } else if (7 == i) {
+                memcpy(config.num_messages, config_message,
+                       strlen(config_message));
+                config.num_messages_len = strlen(config_message);
+            } else if (8 == i) {
+                memcpy(config.num_push_dongles, config_message,
+                       strlen(config_message));
+                config.num_push_dongles_len = strlen(config_message);
+            } else if (9 == i) {
+                memcpy(config.rssi_coverage, config_message,
+                       strlen(config_message));
+                config.rssi_coverage_len = strlen(config_message);
+            } else if (10 == i) {
+                memcpy(config.uuid, config_message, strlen(config_message));
+                config.uuid_len = strlen(config_message);
+            }
+            i++;
+        }
+        fclose(file);
+    }
+
+    return config;
+}
+
+/*
  *  get_system_time:
  *
  *  Helper function called by is_used_addr to give each user's MAC address the
@@ -125,9 +207,7 @@ static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi) {
 
     ba2str(bdaddr, addr);
 
-    // printf("scanned: %s\n", &addr[0]);
     if (is_used_addr(addr) == false) {
-        // printf("need to add to linked list: %s\n", &addr[0]);
         PushList data;
         data.initial_scanned_time = get_system_time();
         for (i = 0; i < LEN_OF_MAC_ADDRESS; i++) {
@@ -241,7 +321,6 @@ void *send_file(void *arg) {
                     g_idle_handler[i].is_waiting_to_send = false;
                     break;
                 }
-                // printf("Thread number %d\n", thread_addr->thread_id);
                 long long start = get_system_time();
                 addr = (char *)g_idle_handler[i].scanned_mac_address;
                 channel = obexftp_browse_bt_push(addr);
@@ -510,8 +589,9 @@ void *cleanup_push_list(void) {
         LinkedListNode *temp = ll_head;
         while (temp != NULL) {
             if (get_system_time() - temp->data.initial_scanned_time > TIMEOUT) {
+                printf("Removed %s from linked list.\n",
+                       &temp->data.scanned_mac_address[0]);
                 delete_node(temp->data);
-                printf("%s\n", "Removed a node");
             }
             temp = temp->next;
         }
@@ -688,88 +768,6 @@ char *choose_file(char *messagetosend) {
     }
     perror("Message files do not exist");
     return NULL;
-}
-
-/*
- *  get_config:
- *
- *  While not end of file, read config file line by line and store data into the
- *  global variable of a Config struct. The variable i is used to know which
- *  line is being processed.
- *
- *  Parameters:
- *
- *  filename - the name of the config file that stores all the beacon data
- *
- *  Return value:
- *
- *  config - Config struct including filepath, coordinates, etc.
- */
-Config get_config(char *filename) {
-    Config config;  // return variable is struct that contains all data
-
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        /* handle error */
-        fprintf(stderr, "Error opening file\n");
-    } else {
-        char line[MAX_BUFFER];  // stores the string of current line being read
-        int i = 0;              // keeps track of which line being processed
-
-        /* If there are still lines to read in the config file, read the line
-         * and store each information into the config struct. */
-        while (fgets(line, sizeof(line), file) != NULL) {
-            char *config_message;
-            config_message = strstr((char *)line, DELIMITER);
-            config_message = config_message + strlen(DELIMITER);
-            if (0 == i) {
-                memcpy(config.coordinate_X, config_message,
-                       strlen(config_message));
-                config.coordinate_X_len = strlen(config_message);
-            } else if (1 == i) {
-                memcpy(config.coordinate_Y, config_message,
-                       strlen(config_message));
-                config.coordinate_Y_len = strlen(config_message);
-            } else if (2 == i) {
-                memcpy(config.coordinate_Z, config_message,
-                       strlen(config_message));
-                config.coordinate_Z_len = strlen(config_message);
-            } else if (3 == i) {
-                memcpy(config.filename, config_message, strlen(config_message));
-                config.filename_len = strlen(config_message);
-            } else if (4 == i) {
-                memcpy(config.filepath, config_message, strlen(config_message));
-                config.filepath_len = strlen(config_message);
-            } else if (5 == i) {
-                memcpy(config.max_devices, config_message,
-                       strlen(config_message));
-                config.max_devices_len = strlen(config_message);
-            } else if (6 == i) {
-                memcpy(config.num_groups, config_message,
-                       strlen(config_message));
-                config.num_groups_len = strlen(config_message);
-            } else if (7 == i) {
-                memcpy(config.num_messages, config_message,
-                       strlen(config_message));
-                config.num_messages_len = strlen(config_message);
-            } else if (8 == i) {
-                memcpy(config.num_push_dongles, config_message,
-                       strlen(config_message));
-                config.num_push_dongles_len = strlen(config_message);
-            } else if (9 == i) {
-                memcpy(config.rssi_coverage, config_message,
-                       strlen(config_message));
-                config.rssi_coverage_len = strlen(config_message);
-            } else if (10 == i) {
-                memcpy(config.uuid, config_message, strlen(config_message));
-                config.uuid_len = strlen(config_message);
-            }
-            i++;
-        }
-        fclose(file);
-    }
-
-    return config;
 }
 
 /*
