@@ -35,6 +35,7 @@
 LBeacon
 ftp-sync.json
 settings.json
+output.txt
 
 # For Mac
 .DS_Store

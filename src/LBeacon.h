@@ -22,14 +22,14 @@
  *
  * Abstract:
  *
- *      BeDIPS uses LBeacons to deliver to users' devices 3D coordinates and
- *      textual descriptions of their locations. Basically, a LBeacon is an
- *      inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
+ *      BeDIPS uses LBeacons to deliver 3D coordinates and textual
+ *      descriptions of their locations to users' devices. Basically, a LBeacon
+ *      is an inexpensive, Bluetooth Smart Ready device. The 3D coordinates and
  *      location description of every LBeacon are retrieved from BeDIS
  *      (Building/environment Data and Information System) and stored locally
  *      during deployment and maintenance times. Once initialized, each LBeacon
  *      broadcasts its coordinates and location description to Bluetooth
- *      enabled devices within its coverage area.
+ *      enabled user devices within its coverage area.
  *
  * Authors:
  *
@@ -39,41 +39,47 @@
  *      Han Hu, hhu14@illinois.edu
  *      Jeffrey Lin, lin.jeff03@gmail.com
  *      Howard Hsu, haohsu0823@gmail.com
- *
  */
 
 /*
 * INCLUDES
 */
-#include "bluetooth/bluetooth.h"
-#include "bluetooth/hci.h"
-#include "bluetooth/hci_lib.h"
-#include "ctype.h"
-#include "dirent.h"
-#include "errno.h"
-#include "limits.h"
-#include "netdb.h"
-#include "netinet/in.h"
-#include "obexftp/client.h"
-#include "pthread.h"
-#include "semaphore.h"
-#include "signal.h"
-#include "stdbool.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "sys/ioctl.h"
-#include "sys/poll.h"
-#include "sys/socket.h"
-#include "sys/time.h"
-#include "sys/timeb.h"
-#include "sys/types.h"
-#include "time.h"
-#include "unistd.h"
+
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+#include <bluetooth/hci_lib.h>
+#include <ctype.h>
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <obexftp/client.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/poll.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/timeb.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
+#include "LinkedList.h"
+#include "Queue.h"
+#include "Utilities.h"
 
 /*
  * CONSTANTS
  */
+
+/* Maximum number of characters in each line of config file */
+#define CONFIG_BUFFER 64
 
 /* File path of the config file */
 #define CONFIG_FILENAME "../config/config.conf"
@@ -81,35 +87,11 @@
 /* Parameter that determines the start of the config file */
 #define DELIMITER "="
 
+/* Maximum number of characters in message filenames */
+#define FILENAME_BUFFER 256
+
 /* Length of Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
-
-/* Maximum number of characters in each line of config file */
-#define MAXIMUM_BUFFER 64
-
-/* Maximum number of devices to be handled by all PUSH dongles */
-#define MAXIMUM_NUMBER_OF_DEVICES 18
-
-/* Maximum number of devices that a PUSH dongle can handle */
-#define MAXIMUM_NUMBER_OF_DEVICES_HANDLED_BY_EACH_PUSH_DONGLE 9
-
-/* Maximum number of the Bluetooth Object PUSH threads */
-#define MAXIMUM_NUMBER_OF_THREADS 18
-
-/* Optimal number of user devices handled by each PUSH dongle */
-#define OPTIMAL_NUMBER_OF_DEVICES_HANDLED_BY_A_PUSH_DONGLE 5
-
-/* Number of the Bluetooth dongles used for PUSH function */
-#define NUMBER_OF_PUSH_DONGLES 2
-
-/* Device ID of the primary PUSH dongle */
-#define PUSH_DONGLE_PRIMARY 2
-
-/* Device ID of the secondary PUSH dongle */
-#define PUSH_DONGLE_SECONDARY 3
-
-/* Device ID of the SCAN dongle */
-#define SCAN_DONGLE 1
 
 /* Transmission range limiter that only allows devices in the RSSI range to
  * connect */
@@ -117,7 +99,11 @@
 
 /* Time interval, in milliseconds, that determines if the bluetooth device can
  * be removed from the push list */
-#define TIMEOUT 20000
+#define TIMEOUT 30000
+
+/* Maximum number of characters in each line of output file used for tracking
+ * scanned devices */
+#define TRACKING_BUFFER 1024
 
 /* Command opcode pack/unpack from HCI library */
 #define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
@@ -131,7 +117,7 @@
 /* BlueZ bluetooth extended inquiry response protocol: complete local name */
 #define EIR_NAME_COMPLETE 0x09
 
-/* BlueZ bluetooth extended inquiry response protocol:: Manufacturer Specific
+/* BlueZ bluetooth extended inquiry response protocol: Manufacturer Specific
  * Data */
 #define EIR_MANUFACTURE_SPECIFIC_DATA 0xFF
 
@@ -139,26 +125,14 @@
  * GLOBAL VARIABLES
  */
 
-/* An array used for tracking MAC addresses of scanned devices */
-char g_addr[LENGTH_OF_MAC_ADDRESS] = {0};
-
-/* A flag that is used to check if CTRL-C is pressed */
-bool g_done = false;
-
 /* The path of object push file */
 char *g_filepath;
-
-/* An array of flags needed to indicate whether each push thread is idle */
-int g_idle_handler[MAXIMUM_NUMBER_OF_DEVICES] = {0};
 
 /* The first timestamp of the output file used for tracking scanned devices */
 unsigned g_initial_timestamp_of_file = 0;
 
 /* The most recent time of the output file used for tracking scanned devices */
 unsigned g_most_recent_timestamp_of_file = 0;
-
-/* An array used for storing pushed users and bluetooth device addresses */
-char g_pushed_user_addr[MAXIMUM_NUMBER_OF_DEVICES][LENGTH_OF_MAC_ADDRESS];
 
 /* Number of lines in the output file used for tracking scanned devices */
 int g_size_of_file = 0;
@@ -167,8 +141,7 @@ int g_size_of_file = 0;
  * UNION
  */
 
-/* Theis union will convert floats into Hex code which will be used in the main
- */
+/* This union will convert floats into Hex code used for the beacon location */
 union {
     float f;
     unsigned char b[sizeof(float)];
@@ -183,104 +156,111 @@ union {
 union {
     float f;
     unsigned char b[sizeof(float)];
-} level;
+} coordinate_Z;
 
 /*
  * TYPEDEF STRUCTS
  */
 
 typedef struct Config {
-    /* A string with information about the X coordinate of the beacon location
-     */
-    char coordinate_X[MAXIMUM_BUFFER];
+    /* A string representation of the X coordinate of the beacon location */
+    char coordinate_X[CONFIG_BUFFER];
 
-    /* A string with information about the Y coordinate of the beacon location
-     */
-    char coordinate_Y[MAXIMUM_BUFFER];
+    /* A string representation of the Y coordinate of the beacon location */
+    char coordinate_Y[CONFIG_BUFFER];
 
-    /* A string with information about the filename */
-    char filename[MAXIMUM_BUFFER];
+    /* A string representation of the Z coordinate of the beacon location */
+    char coordinate_Z[CONFIG_BUFFER];
 
-    /* A string with information about the filepath */
-    char filepath[MAXIMUM_BUFFER];
+    /* A string representation of the message filename */
+    char filename[CONFIG_BUFFER];
 
-    /* A string with information about the current level in the building */
-    char level[MAXIMUM_BUFFER];
+    /* A string representation of the message filename's filepath */
+    char filepath[CONFIG_BUFFER];
 
-    /* A string with information about the required signal strength */
-    char rssi_coverage[MAXIMUM_BUFFER];
+    /* A string representation of the maximum number of devices to be handled by
+     * all push dongles */
+    char maximum_number_of_devices[CONFIG_BUFFER];
 
-    /* A string with information about the number of groups */
-    char number_of_groups[MAXIMUM_BUFFER];
+    /* A string representation of number of message groups */
+    char number_of_groups[CONFIG_BUFFER];
 
-    /* A string with information about the number of messages */
-    char number_of_messages[MAXIMUM_BUFFER];
+    /* A string representation of the number of messages */
+    char number_of_messages[CONFIG_BUFFER];
 
-    /* A string with information about the universally unique identifer */
-    char uuid[MAXIMUM_BUFFER];
+    /* A string representation of the number of push dongles */
+    char number_of_push_dongles[CONFIG_BUFFER];
 
-    /* Stores the string length needed to store the X coordinate */
+    /* A string representation of the required signal strength */
+    char rssi_coverage[CONFIG_BUFFER];
+
+    /* A string representation of the universally unique identifer */
+    char uuid[CONFIG_BUFFER];
+
+    /* The string length needed to store coordinate_X */
     int coordinate_X_length;
 
-    /* Stores the string length needed to store the Y coordinate */
+    /* The string length needed to store coordinate_Y */
     int coordinate_Y_length;
 
-    /* Stores the string length needed to store the filename */
+    /* The string length needed to store coordinate_Z */
+    int coordinate_Z_length;
+
+    /* The string length needed to store filename */
     int filename_length;
 
-    /* Stores the string length needed to store the filepath */
+    /* The string length needed to store filepath */
     int filepath_length;
 
-    /* Stores the string length needed to store the current level position */
-    int level_length;
+    /* The string length needed to store maximum_number_of_devices */
+    int maximum_number_of_devices_length;
 
-    /* Stores the string length needed to store the required signal strength */
-    int rssi_coverage_length;
-
-    /* Stores the string length needed to store the number of groups */
+    /* The string length needed to store number_of_groups */
     int number_of_groups_length;
 
-    /* Stores the string length needed to store the number of messages */
+    /* The string length needed to store number_of_messages */
     int number_of_messages_length;
 
-    /* Stores the string length needed to store the universally unique identifer
-     */
+    /* The string length needed to store number_of_push_dongles */
+    int number_of_push_dongles_length;
+
+    /* The string length needed to store rssi_coverage */
+    int rssi_coverage_length;
+
+    /* The string length needed to store uuid */
     int uuid_length;
 } Config;
 
 /* Struct for storing config information from the input file */
 Config g_config;
 
-typedef struct PushList {
-    long long first_appearance_time[MAXIMUM_NUMBER_OF_DEVICES];
-    char discovered_device_addr[MAXIMUM_NUMBER_OF_DEVICES]
-                               [LENGTH_OF_MAC_ADDRESS];
-    bool is_used_device[MAXIMUM_NUMBER_OF_DEVICES];
-} PushList;
+typedef struct ThreadStatus {
+    char scanned_mac_address[LENGTH_OF_MAC_ADDRESS];
+    int idle;
+    bool is_waiting_to_send;
+} ThreadStatus;
 
-/* Struct for storing information on users' devices discovered by each beacon */
-PushList g_push_list;
-
-typedef struct ThreadAddr {
-    pthread_t thread;
-    int thread_id;
-    char addr[LENGTH_OF_MAC_ADDRESS];
-} ThreadAddr;
-
-/* Struct for storing information for each thread */
-ThreadAddr g_thread_addr[MAXIMUM_NUMBER_OF_DEVICES];
+/* An array of struct for storing information and status of each thread */
+ThreadStatus *g_idle_handler;
 
 /*
  * FUNCTIONS
  */
-long long get_system_time();
-bool is_used_addr(char addr[]);
-void *send_file(void *ptr);
-static void send_to_push_dongle(bdaddr_t *bdaddr, int rssi);
-static void print_RSSI_value(bdaddr_t *bdaddr, bool has_rssi, int rssi);
-static void track_devices(bdaddr_t *bdaddr, char *filename);
-static void start_scanning();
-void *timeout_cleaner(void);
-void pthread_create_error_message(int v);
-char *choose_file(char *messagetosend);
+
 Config get_config(char *filename);
+long long get_system_time();
+bool is_used_address(char address[]);
+void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi);
+void *queue_to_array();
+void *send_file(void *id);
+void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
+                      int rssi);
+void start_scanning();
+void *cleanup_linked_list(void);
+void track_devices(bdaddr_t *bluetooth_device_address, char *filename);
+char *choose_file(char *message_to_send);
+void pthread_create_error_message(int error_code);
+int enable_advertising(int advertising_interval, char *advertising_uuid,
+                       int rssi_value);
+int disable_advertising();
+void *ble_beacon(void *beacon_location);
