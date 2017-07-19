@@ -43,7 +43,7 @@
 
 #include "Utilities.h"
 
-// A flag that is used to check if CTRL-C is pressed
+/* Initialize flag that is used to check if CTRL-C is pressed */
 bool g_done = false;
 
 /*
@@ -60,22 +60,22 @@ bool g_done = false;
  *  data - @todo
  */
 unsigned int *uuid_str_to_data(char *uuid) {
-    char conv[] = "0123456789ABCDEF";
-    int len = strlen(uuid);
-    unsigned int *data = (unsigned int *)malloc(sizeof(unsigned int) * len);
+    char conversion[] = "0123456789ABCDEF";
+    int uuid_length = strlen(uuid);
+    unsigned int *data = (unsigned int *)malloc(sizeof(unsigned int) * uuid_length);
 
     if (data == NULL) {
-        /* handle error */
-        fprintf(stderr, "Failed to allocate memory\n");
+        /* Error handling */
+        perror("Failed to allocate memory");
         return NULL;
     }
 
-    unsigned int *dp = data;
-    char *cu = uuid;
+    unsigned int *data_pointer = data;
+    char *uuid_counter = uuid;
 
-    for (; cu < uuid + len; dp++, cu += 2) {
-        *dp = ((strchr(conv, toupper(*cu)) - conv) * 16) +
-              (strchr(conv, toupper(*(cu + 1))) - conv);
+    for (; uuid_counter < uuid + uuid_length; data_pointer++, uuid_counter += 2) {
+        *data_pointer = ((strchr(conversion, toupper(*uuid_counter)) - conversion) * 16) +
+              (strchr(conversion, toupper(*(uuid_counter + 1))) - conversion);
     }
 
     return data;
@@ -113,4 +113,4 @@ unsigned int twoc(int in, int t) {
  *
  *  None
  */
-void ctrlc_handler(int s) { g_done = true; }
+void ctrlc_handler(int stop) { g_done = true; }

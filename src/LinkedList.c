@@ -48,44 +48,45 @@
 
 #include "LinkedList.h"
 
-// Initialize pointer to the LinkedListNode at the head of the linked list
+/* Initialize pointer to the LinkedListNode at the head of the linked list */
 LinkedListNode *linked_list_head = NULL;
 
-// Initialize pointer to current LinkedListNode of the linked list
+/* Initialize pointer to current LinkedListNode of the linked list */
 LinkedListNode *linked_list_current = NULL;
 
 /*
  *  insert_first:
  *
- *  This function will allocate a LinkedListNode with the passed in PushList
- *  struct data and at the front of the linked list. Because the node will be
- *  placed at the front of the list, the head will be the new LinkedListNode.
+ *  This function will allocate a LinkedListNode with the passed in
+ *  ScannedDevice struct data and at the front of the linked list. Because the
+ *  node will be placed at the front of the list, the head will be the new
+ *  LinkedListNode.
  *
  *  Parameters:
  *
- *  data - PushList struct with scanned MAC address at the scanned timestamp
+ *  data - ScannedDevice struct with MAC address at the scanned timestamp
  *
  *  Return value:
  *
  *  None
  */
-void insert_first(PushList data) {
+void insert_first(ScannedDevice data) {
     int mac_address;
 
-    /* Create a node */
-    struct LinkedListNode *link =
+    /* Create a temporary node */
+    struct LinkedListNode *temp =
         (struct LinkedListNode *)malloc(sizeof(struct LinkedListNode));
 
     /* Copy data passed into the function into the new node */
-    link->data.initial_scanned_time = data.initial_scanned_time;
+    temp->data.initial_scanned_time = data.initial_scanned_time;
     for (mac_address = 0; mac_address < LENGTH_OF_MAC_ADDRESS; mac_address++) {
-        link->data.scanned_mac_address[mac_address] =
+        temp->data.scanned_mac_address[mac_address] =
             data.scanned_mac_address[mac_address];
     }
 
     /* Point it to old first node and point first to new first node */
-    link->next = linked_list_head;
-    linked_list_head = link;
+    temp->next = linked_list_head;
+    linked_list_head = temp;
 }
 
 /*
@@ -93,24 +94,24 @@ void insert_first(PushList data) {
  *
  *  This function will remove a specific node from the linked list. We will go
  *  through every node starting from the head and find the node that has the
- *  PushList struct data we passed into the function. Once we find the node, if
- *  it is the head, we need to replace the head with the next LinkedListNode it
- *  is connected to.
+ *  ScannedDevice struct data we passed into the function. Once we find the
+ *  node, if it is the head, we need to replace the head with the next
+ *  LinkedListNode it is connected to.
  *
  *  Parameters:
  *
- *  data - PushList struct with scanned MAC address at the scanned timestamp
+ *  data - ScannedDevice struct with MAC address at the scanned timestamp
  *
  *  Return value:
  *
  *  None
  */
-void delete_node(PushList data) {
+void delete_node(ScannedDevice data) {
     /* Start from the first node */
     struct LinkedListNode *linked_list_current = linked_list_head;
-    struct LinkedListNode *ll_previous = NULL;
+    struct LinkedListNode *linked_list_previous = NULL;
 
-    /* If head if empty */
+    /* If head if empty, exit */
     if (linked_list_head == NULL) {
         return;
     }
@@ -119,12 +120,11 @@ void delete_node(PushList data) {
     while (strcmp(linked_list_current->data.scanned_mac_address,
                   data.scanned_mac_address) != 0) {
         /* If last node, return; else store reference to linked_list_current and
-         * move to
-         * the next node */
+         * move to the next node */
         if (linked_list_current->next == NULL) {
             return;
         } else {
-            ll_previous = linked_list_current;
+            linked_list_previous = linked_list_current;
             linked_list_current = linked_list_current->next;
         }
     }
@@ -133,7 +133,7 @@ void delete_node(PushList data) {
     if (linked_list_current == linked_list_head) {
         linked_list_head = linked_list_head->next;
     } else {
-        ll_previous->next = linked_list_current->next;
+        linked_list_previous->next = linked_list_current->next;
     }
 
     return;
@@ -158,8 +158,7 @@ int get_linked_list_length() {
     int length = 0;
     struct LinkedListNode *linked_list_current;
 
-    /* Start from the beginning. Increment by one as long as the end hasn't been
-     * found. */
+    /* Start from the beginning and increment by one as long as it is the end */
     for (linked_list_current = linked_list_head; linked_list_current != NULL;
          linked_list_current = linked_list_current->next) {
         length++;
@@ -187,7 +186,7 @@ void print_linked_list() {
     /* Start from the first node */
     struct LinkedListNode *ptr = linked_list_head;
 
-    /* Start from the beginning. Stop when the next node doesn't exist. */
+    /* Start from the beginning and stop when the next node doesn't exist */
     printf("%s", "Linked List: ");
     while (ptr != NULL) {
         printf("%s ", &ptr->data.scanned_mac_address[0]);

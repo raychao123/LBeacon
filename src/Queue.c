@@ -47,10 +47,10 @@
 
 #include "Queue.h"
 
-// Initialize pointer to the QueueNode at the head of the queue
+/* Initialize pointer to the QueueNode at the head of the queue */
 QueueNode *queue_head = NULL;
 
-// Initialize pointer to the QueueNode at the tail of the queue
+/* Initialize pointer to the QueueNode at the tail of the queue */
 QueueNode *queue_tail = NULL;
 
 /*
@@ -71,7 +71,7 @@ QueueNode *queue_tail = NULL;
 void enqueue(char data[]) {
     int mac_address_iterator;
 
-    /* Create a node */
+    /* Create a temporary node */
     struct QueueNode *temp =
         (struct QueueNode *)malloc(sizeof(struct QueueNode));
 
@@ -82,13 +82,13 @@ void enqueue(char data[]) {
     }
     temp->next = NULL;
 
-    /* If queue is empty, set both head and tail to the new node. */
+    /* If queue is empty, set both head and tail to the new node */
     if (queue_head == NULL && queue_tail == NULL) {
         queue_head = queue_tail = temp;
         return;
     }
 
-    /* If queue is not empty, only set the tail to the new node. */
+    /* If queue is not empty, only set the tail to the new node */
     queue_tail->next = temp;
     queue_tail = temp;
     free(temp);
@@ -112,7 +112,7 @@ void dequeue() {
     /* Start from the first node */
     struct QueueNode *temp = queue_head;
 
-    /* If head if empty */
+    /* If head if empty, exit */
     if (queue_head == NULL) {
         return;
     }
@@ -142,12 +142,12 @@ void dequeue() {
  *  return_value - MAC address of the head QueueNode
  */
 char *peek() {
-    /* If head if empty */
+    /* If head if empty, exit */
     if (queue_head == NULL) {
         return NULL;
     }
 
-    /* MAC address of the first QueueNode */
+    /* Return MAC address of the first QueueNode */
     char *return_value = &queue_head->data[0];
     return return_value;
 }
@@ -170,7 +170,7 @@ void print_queue() {
     /* Start from the first node */
     struct QueueNode *temp = queue_head;
 
-    /* Start from the beginning. Stop when the next node doesn't exist. */
+    /* Start from the beginning and stop when the next node doesn't exist */
     printf("%s", "Queue: ");
     while (temp != NULL) {
         printf("%s ", &temp->data[0]);

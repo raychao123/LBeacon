@@ -49,16 +49,15 @@
 /* Length of Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
 
-/* Struct for storing scanned timestamp and MAC address of the bluetooth device
- */
-typedef struct PushList {
+/* Struct for storing scanned timestamp and MAC address of the user's device */
+typedef struct ScannedDevice {
     long long initial_scanned_time;
     char scanned_mac_address[LENGTH_OF_MAC_ADDRESS];
-} PushList;
+} ScannedDevice;
 
-/* Struct for each node in the linked list; data is a PushList struct */
+/* Struct for each node in the linked list; data is a ScannedDevice struct */
 typedef struct LinkedListNode {
-    PushList data;
+    ScannedDevice data;
     struct LinkedListNode *next;
 } LinkedListNode;
 
@@ -72,7 +71,7 @@ extern LinkedListNode *linked_list_current;
  * FUNCTIONS
  */
 
-void insert_first(PushList data);
-void delete_node(PushList data);
+void insert_first(ScannedDevice data);
+void delete_node(ScannedDevice data);
 int get_linked_list_length();
 void print_linked_list();

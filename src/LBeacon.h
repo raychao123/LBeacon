@@ -99,10 +99,10 @@
 
 /* Time interval, in milliseconds, that determines if the bluetooth device can
  * be removed from the push list */
-#define TIMEOUT 60000
+#define TIMEOUT 30000
 
-/* Maximum number of characters in each line of output.txt file for tracking
- * timestamps and MAC addresses */
+/* Maximum number of characters in each line of output file used for tracking
+ * scanned devices */
 #define TRACKING_BUFFER 1024
 
 /* Command opcode pack/unpack from HCI library */
@@ -141,8 +141,7 @@ int g_size_of_file = 0;
  * UNION
  */
 
-/* This union will convert floats into Hex code which will be used in the main
- */
+/* This union will convert floats into Hex code used for the beacon location */
 union {
     float f;
     unsigned char b[sizeof(float)];
@@ -164,75 +163,71 @@ union {
  */
 
 typedef struct Config {
-    /* A string with information about the X coordinate of the beacon location
-     */
+    /* A string representation of the X coordinate of the beacon location */
     char coordinate_X[CONFIG_BUFFER];
 
-    /* A string with information about the Y coordinate of the beacon location
-     */
+    /* A string representation of the Y coordinate of the beacon location */
     char coordinate_Y[CONFIG_BUFFER];
 
-    /* A string with information about the Z coordinate of the beacon location
-     */
+    /* A string representation of the Z coordinate of the beacon location */
     char coordinate_Z[CONFIG_BUFFER];
 
-    /* A string with information about the filename */
+    /* A string representation of the message filename */
     char filename[CONFIG_BUFFER];
 
-    /* A string with information about the filepath */
+    /* A string representation of the message filename's filepath */
     char filepath[CONFIG_BUFFER];
 
-    /* A string with information about the maximum number of devices to be
-     * handled by all PUSH dongles */
+    /* A string representation of the maximum number of devices to be handled by
+     * all push dongles */
     char maximum_number_of_devices[CONFIG_BUFFER];
 
-    /* A string with information about the number of groups */
+    /* A string representation of number of message groups */
     char number_of_groups[CONFIG_BUFFER];
 
-    /* A string with information about the number of messages */
+    /* A string representation of the number of messages */
     char number_of_messages[CONFIG_BUFFER];
 
-    /* A string with information about the number of push dongles */
+    /* A string representation of the number of push dongles */
     char number_of_push_dongles[CONFIG_BUFFER];
 
-    /* A string with information about the required signal strength */
+    /* A string representation of the required signal strength */
     char rssi_coverage[CONFIG_BUFFER];
 
-    /* A string with information about the universally unique identifer */
+    /* A string representation of the universally unique identifer */
     char uuid[CONFIG_BUFFER];
 
-    /* Stores the string length needed to store the X coordinate */
+    /* The string length needed to store coordinate_X */
     int coordinate_X_length;
 
-    /* Stores the string length needed to store the Y coordinate */
+    /* The string length needed to store coordinate_Y */
     int coordinate_Y_length;
 
-    /* Stores the string length needed to store the Z coordinate */
+    /* The string length needed to store coordinate_Z */
     int coordinate_Z_length;
 
-    /* Stores the string length needed to store the filename */
+    /* The string length needed to store filename */
     int filename_length;
 
-    /* Stores the string length needed to store the filepath */
+    /* The string length needed to store filepath */
     int filepath_length;
 
-    /* Stores the string length needed to store the maximum number of devices */
+    /* The string length needed to store maximum_number_of_devices */
     int maximum_number_of_devices_length;
 
-    /* Stores the string length needed to store the number of groups */
+    /* The string length needed to store number_of_groups */
     int number_of_groups_length;
 
-    /* Stores the string length needed to store the number of messages */
+    /* The string length needed to store number_of_messages */
     int number_of_messages_length;
 
-    /* Stores the string length needed to store the number of push dongles */
+    /* The string length needed to store number_of_push_dongles */
     int number_of_push_dongles_length;
 
-    /* Stores the string length needed to store the required signal strength */
+    /* The string length needed to store rssi_coverage */
     int rssi_coverage_length;
 
-    /* Stores the string length needed to store the universally unique identifer
-     */
+    /* The string length needed to store uuid */
     int uuid_length;
 } Config;
 
@@ -245,7 +240,7 @@ typedef struct ThreadStatus {
     bool is_waiting_to_send;
 } ThreadStatus;
 
-/* An array of struct for storing information for each thread */
+/* An array of struct for storing information and status of each thread */
 ThreadStatus *g_idle_handler;
 
 /*
@@ -254,14 +249,14 @@ ThreadStatus *g_idle_handler;
 
 Config get_config(char *filename);
 long long get_system_time();
-bool is_used_addr(char address[]);
+bool is_used_address(char address[]);
 void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi);
 void *queue_to_array();
 void *send_file(void *id);
 void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
                       int rssi);
 void start_scanning();
-void *cleanup_push_list(void);
+void *cleanup_linked_list(void);
 void track_devices(bdaddr_t *bluetooth_device_address, char *filename);
 char *choose_file(char *message_to_send);
 void pthread_create_error_message(int error_code);

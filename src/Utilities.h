@@ -48,7 +48,7 @@
 #include <string.h>
 #include <unistd.h>
 
-// A flag that is used to check if CTRL-C is pressed
+/* A flag that is used to check if CTRL-C is pressed */
 extern bool g_done;
 
 /*
@@ -57,4 +57,4 @@ extern bool g_done;
 
 unsigned int *uuid_str_to_data(char *uuid);
 unsigned int twoc(int in, int t);
-extern void ctrlc_handler(int s);
+extern void ctrlc_handler(int stop);
