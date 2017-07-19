@@ -48,9 +48,9 @@
 /*
  *  get_config:
  *
- *  While not end of file, the config file is read line by line and stores the
- *  data into the global variable of a Config struct. The variable i is used to
- *  know which line is being processed.
+ *  While not end of file, this function will go throught the config file, read
+ *  line by line, and store the data into the global variable of a Config
+ *  struct.
  *
  *  Parameters:
  *
@@ -65,11 +65,11 @@ Config get_config(char *filename) {
 
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        /* error handling */
+        /* Error handling */
         perror("Error opening file");
     } else {
         /* stores the string of current line being read */
-        char config_setting[MAXIMUM_BUFFER];
+        char config_setting[CONFIG_BUFFER];
 
         /* keeps track of which line is being processed */
         int line = 0;
@@ -132,28 +132,6 @@ Config get_config(char *filename) {
 }
 
 /*
- *  pthread_create_error_message:
- *
- *  Print error message when creating a pthread @todo
- *
- *  Parameters:
- *
- *  v - return value of the pthread_create function
- *
- *  Return value:
- *
- *  None
- */
-void pthread_create_error_message(int v) {
-    if (v == 1)
-        perror("[EPERM] Operation not permitted");
-    else if (v == 11)
-        perror("[EAGAIN] Resource temporarily unavailable");
-    else if (v == 22)
-        perror("[EINAL] Invalid argument");
-}
-
-/*
  *  get_system_time:
  *
  *  This helper function fetches the current time according to the system clock
@@ -165,7 +143,7 @@ void pthread_create_error_message(int v) {
  *
  *  Return value:
  *
- *  system_time - System time in milliseconds
+ *  system_time - system time in milliseconds
  */
 long long get_system_time() {
     struct timeb t;        /* struct that stores the time */
@@ -184,7 +162,7 @@ long long get_system_time() {
  *  This helper function checks whether the specified MAC address given as input
  *  is in the push list of the LBeacon. If it is, the function returns true. If
  *  the address is not in the list, the function adds the address into the list,
- *  stamps it with current system time, and then returns false.
+ *  stamps it with current system time, and then returns false. @todo
  *
  *  Parameters:
  *
@@ -195,10 +173,10 @@ long long get_system_time() {
  *  false - new MAC address, add to push list
  *  true - used MAC address
  */
-bool is_used_addr(char addr[]) {
+bool is_used_addr(char address[]) {
     LinkedListNode *temp = linked_list_head;
     while (temp != NULL) {
-        if (0 == strcmp(addr, temp->data.scanned_mac_address)) {
+        if (0 == strcmp(address, temp->data.scanned_mac_address)) {
             return true;
         }
         temp = temp->next;
@@ -218,33 +196,28 @@ bool is_used_addr(char addr[]) {
  *
  *  Parameters:
  *
- *  bdaddr - bluetooth device address
+ *  bluetooth_device_address - bluetooth device address
  *  rssi - RSSI value of bluetooth device
  *
  *  Return value:
  *
  *  None
  */
-static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
-    int dongle_iterator; /* iterator through number of push dongle */
+void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
+    int i; /* iterator through number of push dongle @todo */
     char address[LENGTH_OF_MAC_ADDRESS]; /* store the MAC address as string */
 
     /* Converts the bluetooth device address to string */
     ba2str(bluetooth_device_address, address);
 
-    /*
-     *  If the MAC address is already in the push list, return. THe function
-     *  won't send to push dongle again.
-     */
+    /* If the MAC address is already in the push list, return. THe function
+     * won't send to push dongle again. */
     if (is_used_addr(address) == false) {
         PushList data;
         data.initial_scanned_time = get_system_time();
-        for (dongle_iterator = 0; dongle_iterator < LENGTH_OF_MAC_ADDRESS;
-             dongle_iterator++) {
-            data.scanned_mac_address[dongle_iterator] =
-                address[dongle_iterator];
+        for (i = 0; i < LENGTH_OF_MAC_ADDRESS; i++) {
+            data.scanned_mac_address[i] = address[i];
         }
-        /* Create a thread for a new MAC address on the push list. */
         insert_first(data);
         enqueue(address);
         print_linked_list();
@@ -272,9 +245,8 @@ static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
  *  None
  */
 void *queue_to_array() {
-    printf("queue_to_array\n");
     int maximum_number_of_devices = atoi(g_config.maximum_number_of_devices);
-    int i;
+    int i; /* @todo */
     int j;
     bool cancelled = false;
 
@@ -299,26 +271,26 @@ void *queue_to_array() {
  *  This function enables the caller to send the push message to the specified
  *  bluetooth device asynchronously.
  *
- *  [N.B. The beacon may still be scanning for other
- *  bluetooth devices for which the message is being pushed to.]
+ *  [N.B. The beacon may still be scanning for other bluetooth devices for which
+ *  the message is being pushed to.]
  *
  *  Parameters:
  *
- *  ptr - MAC address that will receive the message file
+ *  id - thread ID for each send_file thread
  *
  *  Return value:
  *
  *  None
  */
-void *send_file(void *arg) {
-    printf("send_file\n");
+void *send_file(void *id) {
     obexftp_client_t *client = NULL;
     char *address = NULL;
     char *filename;
+    int thread_id = (int)id;
     int channel = -1;
     int device_id = 0;
     int socket;
-    int i;
+    int i; /* @todo */
     int j;
     int k;
     int return_value; /* if the operation failed, success is set */
@@ -326,19 +298,19 @@ void *send_file(void *arg) {
 
     int number_of_push_dongles = atoi(g_config.number_of_push_dongles);
     int maximum_number_of_devices = atoi(g_config.maximum_number_of_devices);
-    int maximum_devices_per_dongle =
+    int maximum_number_of_devices_per_dongle =
         maximum_number_of_devices / number_of_push_dongles;
-
-    int tid = (int)arg;
 
     while (cancelled == false) {
         for (i = 0; i < maximum_number_of_devices; i++) {
-            if (i == tid && g_idle_handler[i].is_waiting_to_send == true) {
+            if (i == thread_id &&
+                g_idle_handler[i].is_waiting_to_send == true) {
                 /* Split the half of the thread ID to one dongle and the other
                  * half to the second dongle. */
                 for (j = 0; j < number_of_push_dongles; j++) {
-                    for (k = 0; k < maximum_devices_per_dongle; k++) {
-                        if (tid == j * maximum_devices_per_dongle + k) {
+                    for (k = 0; k < maximum_number_of_devices_per_dongle; k++) {
+                        if (thread_id ==
+                            j * maximum_number_of_devices_per_dongle + k) {
                             device_id = j + 1;
                         }
                     }
@@ -349,7 +321,7 @@ void *send_file(void *arg) {
                  */
                 socket = hci_open_dev(device_id);
                 if (0 > device_id || 0 > socket) {
-                    /* error handling */
+                    /* Error handling */
                     perror("Error opening socket");
                     for (j = 0; j < LENGTH_OF_MAC_ADDRESS; j++) {
                         g_idle_handler[i].scanned_mac_address[j] = 0;
@@ -376,9 +348,9 @@ void *send_file(void *arg) {
                 /* Open connection */
                 client = obexftp_open(OBEX_TRANS_BLUETOOTH, NULL, NULL, NULL);
                 long long end = get_system_time();
-                // printf("Time to open connection: %lld ms\n", end - start);
+                printf("Time to open connection: %lld ms\n", end - start);
                 if (client == NULL) {
-                    /* error handling */
+                    /* Error handling */
                     perror("Error opening obexftp client");
                     for (j = 0; j < LENGTH_OF_MAC_ADDRESS; j++) {
                         g_idle_handler[i].scanned_mac_address[j] = 0;
@@ -395,7 +367,7 @@ void *send_file(void *arg) {
                 /* If obexftp_connect_push returns a negative integer, then it
                  * goes to error handling. */
                 if (0 > return_value) {
-                    /* error handling */
+                    /* Error handling */
                     perror("Error connecting to obexftp device");
                     obexftp_close(client);
                     client = NULL;
@@ -411,14 +383,14 @@ void *send_file(void *arg) {
                 /* Push file to the scanned device */
                 return_value = obexftp_put_file(client, g_filepath, filename);
                 if (0 > return_value) {
-                    /* error handling */
+                    /* Error handling */
                     perror("Error putting file");
                 }
 
                 /* Disconnect connection */
                 return_value = obexftp_disconnect(client);
                 if (0 > return_value) {
-                    /* error handling */
+                    /* Error handling */
                     perror("Error disconnecting the client");
                 }
 
@@ -453,8 +425,8 @@ void *send_file(void *arg) {
  *
  *  None
  */
-static void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
-                             int rssi) {
+void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
+                      int rssi) {
     char address[LENGTH_OF_MAC_ADDRESS]; /* MAC address that will be printed */
 
     /* Converts the bluetooth device address to string */
@@ -489,11 +461,11 @@ static void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
  *
  *  None
  */
-static void start_scanning() {
+void start_scanning() {
     struct hci_filter filter;
     struct pollfd file_descriptor;
     unsigned char event_buffer[HCI_MAX_EVENT_SIZE];
-    unsigned char *event_buffer_ptr;
+    unsigned char *event_buffer_pointer;
     hci_event_hdr *event_handler;
     inquiry_cp inquiry_copy;
     inquiry_info_with_rssi *info_rssi;
@@ -503,40 +475,36 @@ static void start_scanning() {
     int socket = 0;
     int event_buffer_length;
     int results;
-    int results_iterator;
+    int i;
 
     /* Open Bluetooth device */
-    printf("hello world 1\n");
     socket = hci_open_dev(device_id);
     if (0 > device_id || 0 > socket) {
-        /* error handling */
+        /* Error handling */
         perror("Error opening socket");
         return;
     }
 
     /* Setup filter */
-    printf("hello world 2\n");
     hci_filter_clear(&filter);
     hci_filter_set_ptype(HCI_EVENT_PKT, &filter);
     hci_filter_set_event(EVT_INQUIRY_RESULT, &filter);
     hci_filter_set_event(EVT_INQUIRY_RESULT_WITH_RSSI, &filter);
     hci_filter_set_event(EVT_INQUIRY_COMPLETE, &filter);
     if (0 > setsockopt(socket, SOL_HCI, HCI_FILTER, &filter, sizeof(filter))) {
-        /* error handling */
+        /* Error handling */
         perror("Error setting HCI filter");
         hci_close_dev(socket);
         return;
     }
-    printf("hello world 3\n");
     hci_write_inquiry_mode(socket, 0x01, 10);
     if (0 > hci_send_cmd(socket, OGF_HOST_CTL, OCF_WRITE_INQUIRY_MODE,
                          WRITE_INQUIRY_MODE_RP_SIZE, &inquiry_copy)) {
-        /* error handling */
+        /* Error handling */
         perror("Error setting inquiry mode");
         return;
     }
 
-    printf("hello world 4\n");
     memset(&inquiry_copy, 0, sizeof(inquiry_copy));
     inquiry_copy.lap[2] = 0x9e;
     inquiry_copy.lap[1] = 0x8b;
@@ -548,7 +516,7 @@ static void start_scanning() {
 
     if (0 > hci_send_cmd(socket, OGF_LINK_CTL, OCF_INQUIRY, INQUIRY_CP_SIZE,
                          &inquiry_copy)) {
-        /* error handling */
+        /* Error handling */
         perror("Error starting inquiry");
         return;
     }
@@ -571,31 +539,27 @@ static void start_scanning() {
             }
 
             event_handler = (void *)(event_buffer + 1);
-            event_buffer_ptr = event_buffer + (1 + HCI_EVENT_HDR_SIZE);
+            event_buffer_pointer = event_buffer + (1 + HCI_EVENT_HDR_SIZE);
 
-            results = event_buffer_ptr[0];
+            results = event_buffer_pointer[0];
 
             switch (event_handler->evt) {
                 /* Scanned device with no RSSI value. */
                 case EVT_INQUIRY_RESULT: {
-                    for (results_iterator = 0; results_iterator < results;
-                         results_iterator++) {
-                        info = (void *)event_buffer_ptr +
-                               (sizeof(*info) * results_iterator) + 1;
+                    for (i = 0; i < results; i++) {
+                        info = (void *)event_buffer_pointer +
+                               (sizeof(*info) * i) + 1;
                         print_RSSI_value(&info->bdaddr, 0, 0);
                         track_devices(&info->bdaddr, "output.txt");
                     }
                 } break;
 
-                /*
-                 *  Scanned device with RSSI value. If within range, send
-                 *  message to bluetooth device.
-                 */
+                /* Scanned device with RSSI value. If within range, send message
+                 * to bluetooth device. */
                 case EVT_INQUIRY_RESULT_WITH_RSSI: {
-                    for (results_iterator = 0; results_iterator < results;
-                         results_iterator++) {
-                        info_rssi = (void *)event_buffer_ptr +
-                                    (sizeof(*info_rssi) * results_iterator) + 1;
+                    for (i = 0; i < results; i++) {
+                        info_rssi = (void *)event_buffer_pointer +
+                                    (sizeof(*info_rssi) * i) + 1;
                         track_devices(&info_rssi->bdaddr, "output.txt");
                         print_RSSI_value(&info_rssi->bdaddr, 1,
                                          info_rssi->rssi);
@@ -636,19 +600,17 @@ static void start_scanning() {
  *
  *  None
  */
+/* @todo documentation */
 void *cleanup_push_list(void) {
-    printf("cleanup_push_list\n");
     bool cancelled = false;
-    /*
-     *  In the background, continuously check if it has been 20 seconds since
-     *  the bluetooth device was added to the push list. If so, remove from
-     *  list.
-     */
+
+    /* In the background, continuously check if it has been 20 seconds since the
+     * bluetooth device was added to the push list. If so, remove from list. */
     while (cancelled == false) {
         LinkedListNode *temp = linked_list_head;
         while (temp != NULL) {
             if (get_system_time() - temp->data.initial_scanned_time > TIMEOUT) {
-                printf("Removed %s from linked list.\n",
+                printf("Removed %s from linked list\n",
                        &temp->data.scanned_mac_address[0]);
                 delete_node(temp->data);
             }
@@ -660,11 +622,12 @@ void *cleanup_push_list(void) {
 /*
  *  track_devices:
  *
- *  Track the MAC addresses of scanned bluetooth devices under the beacon. An
- *  output file will contain each timestamp and the MAC addresses of the scanned
- *  bluetooth devices at the given timestamp. Format timestamp and MAC addresses
- *  into a char[] and append new line to end of file. " - " is used to separate
- *  timestamp with MAC address and ", " is used to separate each MAC address.
+ *  This function tracks the MAC addresses of scanned bluetooth devices under
+ *  the beacon. An output file will contain each timestamp and the MAC addresses
+ *  of the scanned bluetooth devices at the given timestamp. Format timestamp
+ *  and MAC addresses into a char[] and append new line to end of file. " - " is
+ *  used to separate timestamp with MAC address and ", " is used to separate
+ *  each MAC address.
  *
  *  Parameters:
  *
@@ -675,25 +638,25 @@ void *cleanup_push_list(void) {
  *
  *  None
  */
-static void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
+void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
     char address[LENGTH_OF_MAC_ADDRESS];
-    char long_long_to_char[10]; /* used for converting long long to char[] */
+    char long_long_to_string[10]; /* used for converting long long to string */
 
     /* Get current timestamp when tracking bluetooth devices. If file is empty,
      * create new file with LBeacon ID. */
     unsigned timestamp = (unsigned)time(NULL);
-    sprintf(long_long_to_char, "%u", timestamp);
+    sprintf(long_long_to_string, "%u", timestamp);
     if (0 == g_size_of_file) {
-        FILE *file_directory =
+        FILE *file_descriptor =
             fopen(filename, "w+"); /* w+ overwrites the file */
-        if (file_directory == NULL) {
-            /* error handling */
+        if (file_descriptor == NULL) {
+            /* Error handling */
             perror("Error opening file");
             return;
         }
-        fputs("LBeacon ID: ", file_directory);
-        fputs(g_config.uuid, file_directory);
-        fclose(file_directory);
+        fputs("LBeacon ID: ", file_descriptor);
+        fputs(g_config.uuid, file_descriptor);
+        fclose(file_descriptor);
         g_size_of_file++;
         g_initial_timestamp_of_file = timestamp;
         memset(&address[0], 0, sizeof(address));
@@ -705,21 +668,21 @@ static void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
     ba2str(bluetooth_device_address, address);
 
     FILE *output;
-    char file_name_buffer[1024];
-    output = fopen(filename, "a+");
+    char line[TRACKING_BUFFER];
+    output = fopen(filename, "a+"); /* a+ appends to the file */
 
     if (output == NULL) {
-        /* error handling */
+        /* Error handling */
         perror("Error opening file");
         return;
     }
 
-    while (fgets(file_name_buffer, sizeof(file_name_buffer), output) != NULL) {
+    while (fgets(line, TRACKING_BUFFER, output) != NULL) {
     }
 
     if (timestamp != g_most_recent_timestamp_of_file) {
         fputs("\n", output);
-        fputs(long_long_to_char, output);
+        fputs(long_long_to_string, output);
         fputs(" - ", output);
         fputs(address, output);
         fclose(output);
@@ -727,7 +690,7 @@ static void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
         g_most_recent_timestamp_of_file = timestamp;
         g_size_of_file++;
     } else {
-        if (strstr(file_name_buffer, address) == NULL) {
+        if (strstr(line, address) == NULL) {
             fputs(", ", output);
             fputs(address, output);
         }
@@ -754,30 +717,30 @@ static void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
  *
  *  Parameters:
  *
- *  messagetosend - name of the message file we want to retrieve
+ *  message_to_send - name of the message file we want to retrieve
  *
  *  Return value:
  *
  *  return_value - message filepath
  */
-char *choose_file(char *messagetosend) {
+char *choose_file(char *message_to_send) {
     DIR *groupdir;           /* dirent that stores list of directories */
     struct dirent *groupent; /* dirent struct that stores directory info */
-    int message_count = 0;   /* iterator for number of messages and groups */
-    int number_of_messages;  /* number of messages listed in config file */
+    int number_of_messages;  /* number of message listed in config file */
     int number_of_groups;    /* number of groups listed in config file */
-    int group_iterator = 0;  /* iterator for number of groups */
-    char filepath[256];      /* store filepath of messagetosend location */
-    char *return_value;      /* return value; converts path to a char * */
+    char filepath[FILENAME_BUFFER]; /* store filepath of message_to_send */
+    int message_count = 0; /* iterator for number of messages and groups */
+    int i = 0;             /* iterator for number of groups */
+    char *return_value;    /* return value; converts path to a char */
 
     /* Convert number of groups and messages from string to integer. */
     number_of_groups = atoi(g_config.number_of_groups);
     number_of_messages = atoi(g_config.number_of_messages);
 
-    /* array of buffer for group file names */
-    char groups[number_of_groups][256];
-    /* array of buffer for message file names */
-    char messages[number_of_messages][256];
+    char groups[number_of_groups]
+               [FILENAME_BUFFER]; /* array of buffer for group file names */
+    char messages[number_of_messages]
+                 [FILENAME_BUFFER]; /* array of buffer for message file names */
 
     /* Stores all the name of files and directories in groups. */
     groupdir = opendir("/home/pi/LBeacon/messages/");
@@ -791,20 +754,19 @@ char *choose_file(char *messagetosend) {
         }
         closedir(groupdir);
     } else {
-        /* error handling */
+        /* Error handling */
         perror("Directories do not exist");
         return NULL;
     }
 
-    memset(filepath, 0, 256);
+    memset(filepath, 0, FILENAME_BUFFER);
     message_count = 0;
 
     /* Go through each message in directory and store each file name. */
-    for (group_iterator = 0; group_iterator < number_of_groups;
-         group_iterator++) {
+    for (i = 0; i < number_of_groups; i++) {
         /* Concatenate strings to make file path */
         sprintf(filepath, "/home/pi/LBeacon/messages/");
-        strcat(filepath, groups[group_iterator]);
+        strcat(filepath, groups[i]);
         DIR *messagedir;
         struct dirent *messageent;
         messagedir = opendir(filepath);
@@ -814,7 +776,7 @@ char *choose_file(char *messagetosend) {
                     strcmp(messageent->d_name, "..") != 0) {
                     strcpy(messages[message_count], messageent->d_name);
                     /* If message name found, return filepath. */
-                    if (0 == strcmp(messages[message_count], messagetosend)) {
+                    if (0 == strcmp(messages[message_count], message_to_send)) {
                         strcat(filepath, "/");
                         strcat(filepath, messages[message_count]);
                         return_value = &filepath[0];
@@ -825,20 +787,43 @@ char *choose_file(char *messagetosend) {
             }
             closedir(messagedir);
         } else {
-            /* error handling */
+            /* Error handling */
             perror("Message files do not exist");
             return NULL;
         }
     }
-    /* error handling */
+
+    /* Error handling */
     perror("Message files do not exist");
     return NULL;
 }
 
 /*
+ *  pthread_create_error_message:
+ *
+ *  Print error message when creating a pthread @todo
+ *
+ *  Parameters:
+ *
+ *  error_code - return value of the pthread_create function
+ *
+ *  Return value:
+ *
+ *  None
+ */
+void pthread_create_error_message(int error_code) {
+    if (error_code == 1)
+        perror("[EPERM] Operation not permitted");
+    else if (error_code == 11)
+        perror("[EAGAIN] Resource temporarily unavailable");
+    else if (error_code == 22)
+        perror("[EINAL] Invalid argument");
+}
+
+/*
  *  enable_advertising:
  *
- *  @todo Determines the advertising capabilities and enables advertising.
+ *  @todo
  *
  *  Parameters:
  *
@@ -855,7 +840,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     int device_id = hci_get_route(NULL);
     int device_handle = 0;
     if ((device_handle = hci_open_dev(device_id)) < 0) {
-        /* error handling */
+        /* Error handling */
         perror("Error opening device");
         return (1);
     }
@@ -878,7 +863,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 
     int return_value = hci_send_req(device_handle, &request, 1000);
     if (return_value < 0) {
-        /* error handling */
+        /* Error handling */
         hci_close_dev(device_handle);
         fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
         return (1);
@@ -899,7 +884,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     return_value = hci_send_req(device_handle, &request, 1000);
 
     if (return_value < 0) {
-        /* error handling */
+        /* Error handling */
         hci_close_dev(device_handle);
         fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
         return (1);
@@ -940,13 +925,11 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     segment_length++;
 
     unsigned int *uuid = uuid_str_to_data(advertising_uuid);
-    int advertising_uuid_iterator;
-    for (advertising_uuid_iterator = 0;
-         advertising_uuid_iterator < strlen(advertising_uuid) / 2;
-         advertising_uuid_iterator++) {
+    int i;
+    for (i = 0; i < strlen(advertising_uuid) / 2; i++) {
         advertisement_data_copy
             .data[advertisement_data_copy.length + segment_length] =
-            htobs(uuid[advertising_uuid_iterator]);
+            htobs(uuid[i]);
         segment_length++;
     }
 
@@ -974,13 +957,13 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     hci_close_dev(device_handle);
 
     if (return_value < 0) {
-        /* error handling */
+        /* Error handling */
         fprintf(stderr, "Can't send request %s (%d)\n", strerror(errno), errno);
         return (1);
     }
 
     if (status) {
-        /* error handling */
+        /* Error handling */
         fprintf(stderr, "LE set advertise returned status %d\n", status);
         return (1);
     }
@@ -989,7 +972,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 /*
  *  disable_advertising:
  *
- *  @todo Determines the advertising capabilities and disables advertising.
+ *  @todo
  *
  *  Parameters:
  *
@@ -1003,7 +986,7 @@ int disable_advertising() {
     int device_id = hci_get_route(NULL);
     int device_handle = 0;
     if ((device_handle = hci_open_dev(device_id)) < 0) {
-        /* error handling */
+        /* Error handling */
         perror("Could not open device");
         return (1);
     }
@@ -1027,14 +1010,14 @@ int disable_advertising() {
     hci_close_dev(device_handle);
 
     if (return_value < 0) {
-        /* error handling */
+        /* Error handling */
         fprintf(stderr, "Can't set advertise mode: %s (%d)\n", strerror(errno),
                 errno);
         return (1);
     }
 
     if (status) {
-        /* error handling */
+        /* Error handling */
         fprintf(stderr, "LE set advertise enable on returned status %d\n",
                 status);
         return (1);
@@ -1048,17 +1031,16 @@ int disable_advertising() {
  *
  *  Parameters:
  *
- *  ptr - @todo
+ *  beacon_location - @todo
  *
  *  Return value:
  *
  *  None
  */
-void *ble_beacon(void *thread_pointer) {
+void *ble_beacon(void *beacon_location) {
     int enable_advertising_success =
-        enable_advertising(300, thread_pointer, 20);
+        enable_advertising(300, beacon_location, 20);
 
-    /* @todo */
     if (enable_advertising_success == 0) {
         struct sigaction sigint_handler;
         sigint_handler.sa_handler = ctrlc_handler;
@@ -1066,7 +1048,7 @@ void *ble_beacon(void *thread_pointer) {
         sigint_handler.sa_flags = 0;
 
         if (sigaction(SIGINT, &sigint_handler, NULL) == -1) {
-            /* error handling */
+            /* Error handling */
             perror("sigaction error");
             return;
         }
@@ -1084,21 +1066,23 @@ void *ble_beacon(void *thread_pointer) {
 }
 
 int main(int argc, char **argv) {
-    char hex_c[MAXIMUM_BUFFER]; /* buffer that contains the local of beacon */
     pthread_t cleanup_push_list_id; /* cleanup_push_list thread ID */
     pthread_t ble_beacon_id;        /* ble_beacon thread ID */
     pthread_t queue_to_array_id;    /* queue_to_array thread ID */
-    int i;                          /* iterator to loop through push list */
-    int j;                          /* @todo */
-    bool cancelled = false;         /* indicator of stopping the scanning */
-    int return_value;               /* pthread create return value */
+    char hex_c[CONFIG_BUFFER]; /* buffer that contains the local of beacon */
+    int thread_id;
+    int i; /* iterator to loop through push list */
+    int j;
+    int return_value;
+    bool cancelled = false; /* indicator of stopping the scanning */
 
     /* Load Config */
     g_config = get_config(CONFIG_FILENAME);
+
     int maximum_number_of_devices = atoi(g_config.maximum_number_of_devices);
     g_idle_handler = malloc(maximum_number_of_devices * sizeof(ThreadStatus));
     if (g_idle_handler == NULL) {
-        /* error handling */
+        /* Error handling */
         perror("Failed to allocate memory");
         return -1;
     }
@@ -1109,9 +1093,10 @@ int main(int argc, char **argv) {
         g_idle_handler[i].idle = -1;
         g_idle_handler[i].is_waiting_to_send = false;
     }
+
     g_filepath = malloc(g_config.filepath_length + g_config.filename_length);
     if (g_filepath == NULL) {
-        /* error handling */
+        /* Error handling */
         perror("Failed to allocate memory");
         return -1;
     }
@@ -1128,22 +1113,22 @@ int main(int argc, char **argv) {
             coordinate_X.b[3], coordinate_Y.b[0], coordinate_Y.b[1],
             coordinate_Y.b[2], coordinate_Y.b[3]);
 
-    /* Clean up linked list */
-    return_value = pthread_create(&cleanup_push_list_id, NULL,
-                                  (void *)cleanup_push_list_id, NULL);
-    if (return_value != 0) {
-        /* error handling */
-        perror("Error with cleanup_push_list using pthread_create");
-        pthread_create_error_message(return_value);
-        pthread_exit(NULL);
-    }
-
     /* Enable message advertising to BLE bluetooth devices */
     return_value =
         pthread_create(&ble_beacon_id, NULL, (void *)ble_beacon, hex_c);
     if (return_value != 0) {
-        /* error handling */
+        /* Error handling */
         perror("Error with ble_beacon using pthread_create");
+        pthread_create_error_message(return_value);
+        pthread_exit(NULL);
+    }
+
+    /* Clean up linked list */
+    return_value = pthread_create(&cleanup_push_list_id, NULL,
+                                  (void *)cleanup_push_list, NULL);
+    if (return_value != 0) {
+        /* Error handling */
+        perror("Error with cleanup_push_list using pthread_create");
         pthread_create_error_message(return_value);
         pthread_exit(NULL);
     }
@@ -1152,7 +1137,6 @@ int main(int argc, char **argv) {
     return_value =
         pthread_create(&queue_to_array_id, NULL, (void *)queue_to_array, NULL);
     if (return_value != 0) {
-        /* error handling */
         perror("Error with queue_to_array using pthread_create");
         pthread_create_error_message(return_value);
         pthread_exit(NULL);
@@ -1160,17 +1144,20 @@ int main(int argc, char **argv) {
 
     /* Send message to scanned MAC address */
     pthread_t send_file_id[maximum_number_of_devices];
-    for (i = 0; i < maximum_number_of_devices; i++) {
-        pthread_create(&send_file_id[i], NULL, (void *)send_file, (void *)i);
+    for (thread_id = 0; thread_id < maximum_number_of_devices; thread_id++) {
+        return_value = pthread_create(&send_file_id[thread_id], NULL,
+                                      (void *)send_file, (void *)thread_id);
+        if (return_value != 0) {
+            perror("Error with send_file using pthread_create");
+            pthread_create_error_message(return_value);
+            pthread_exit(NULL);
+        }
     }
 
     /* Start scanning for bluetooth devices */
-    printf("asdf\n");
     while (cancelled == false) {
-        printf("asdf 2\n");
         start_scanning();
     }
-    printf("ignore\n");
 
     free(g_filepath);
     return 0;

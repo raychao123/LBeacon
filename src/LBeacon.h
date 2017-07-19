@@ -78,17 +78,20 @@
  * CONSTANTS
  */
 
+/* Maximum number of characters in each line of config file */
+#define CONFIG_BUFFER 64
+
 /* File path of the config file */
 #define CONFIG_FILENAME "../config/config.conf"
 
 /* Parameter that determines the start of the config file */
 #define DELIMITER "="
 
+/* Maximum number of characters in message filenames */
+#define FILENAME_BUFFER 256
+
 /* Length of Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
-
-/* Maximum number of characters in each line of config file */
-#define MAXIMUM_BUFFER 64
 
 /* Transmission range limiter that only allows devices in the RSSI range to
  * connect */
@@ -97,6 +100,10 @@
 /* Time interval, in milliseconds, that determines if the bluetooth device can
  * be removed from the push list */
 #define TIMEOUT 60000
+
+/* Maximum number of characters in each line of output.txt file for tracking
+ * timestamps and MAC addresses */
+#define TRACKING_BUFFER 1024
 
 /* Command opcode pack/unpack from HCI library */
 #define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
@@ -159,40 +166,40 @@ union {
 typedef struct Config {
     /* A string with information about the X coordinate of the beacon location
      */
-    char coordinate_X[MAXIMUM_BUFFER];
+    char coordinate_X[CONFIG_BUFFER];
 
     /* A string with information about the Y coordinate of the beacon location
      */
-    char coordinate_Y[MAXIMUM_BUFFER];
+    char coordinate_Y[CONFIG_BUFFER];
 
     /* A string with information about the Z coordinate of the beacon location
      */
-    char coordinate_Z[MAXIMUM_BUFFER];
+    char coordinate_Z[CONFIG_BUFFER];
 
     /* A string with information about the filename */
-    char filename[MAXIMUM_BUFFER];
+    char filename[CONFIG_BUFFER];
 
     /* A string with information about the filepath */
-    char filepath[MAXIMUM_BUFFER];
+    char filepath[CONFIG_BUFFER];
 
     /* A string with information about the maximum number of devices to be
      * handled by all PUSH dongles */
-    char maximum_number_of_devices[MAXIMUM_BUFFER];
+    char maximum_number_of_devices[CONFIG_BUFFER];
 
     /* A string with information about the number of groups */
-    char number_of_groups[MAXIMUM_BUFFER];
+    char number_of_groups[CONFIG_BUFFER];
 
     /* A string with information about the number of messages */
-    char number_of_messages[MAXIMUM_BUFFER];
+    char number_of_messages[CONFIG_BUFFER];
 
     /* A string with information about the number of push dongles */
-    char number_of_push_dongles[MAXIMUM_BUFFER];
+    char number_of_push_dongles[CONFIG_BUFFER];
 
     /* A string with information about the required signal strength */
-    char rssi_coverage[MAXIMUM_BUFFER];
+    char rssi_coverage[CONFIG_BUFFER];
 
     /* A string with information about the universally unique identifer */
-    char uuid[MAXIMUM_BUFFER];
+    char uuid[CONFIG_BUFFER];
 
     /* Stores the string length needed to store the X coordinate */
     int coordinate_X_length;
@@ -248,16 +255,17 @@ ThreadStatus *g_idle_handler;
 Config get_config(char *filename);
 long long get_system_time();
 bool is_used_addr(char address[]);
-static void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi);
+void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi);
 void *queue_to_array();
-void *send_file(void *ptr);
-static void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi, int rssi);
-static void start_scanning();
+void *send_file(void *id);
+void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
+                      int rssi);
+void start_scanning();
 void *cleanup_push_list(void);
-static void track_devices(bdaddr_t *bluetooth_device_address, char *filename);
-char *choose_file(char *messagetosend);
-void pthread_create_error_message(int v);
+void track_devices(bdaddr_t *bluetooth_device_address, char *filename);
+char *choose_file(char *message_to_send);
+void pthread_create_error_message(int error_code);
 int enable_advertising(int advertising_interval, char *advertising_uuid,
                        int rssi_value);
 int disable_advertising();
-void *ble_beacon(void *ptr);
+void *ble_beacon(void *beacon_location);
