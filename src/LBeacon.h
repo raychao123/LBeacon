@@ -78,20 +78,39 @@
  * CONSTANTS
  */
 
+/* Command opcode pack/unpack from HCI library */
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
+
 /* Maximum number of characters in each line of config file */
 #define CONFIG_BUFFER 64
 
-/* File path of the config file */
+/* Filepath of the config file */
 #define CONFIG_FILENAME "../config/config.conf"
 
 /* Parameter that determines the start of the config file */
 #define DELIMITER "="
 
+/* BlueZ bluetooth extended inquiry response protocol: flags */
+#define EIR_FLAGS 0X01
+
+/* BlueZ bluetooth extended inquiry response protocol: Manufacturer Specific
+ * Data */
+#define EIR_MANUFACTURE_SPECIFIC_DATA 0xFF
+
+/* BlueZ bluetooth extended inquiry response protocol: complete local name */
+#define EIR_NAME_COMPLETE 0x09
+
+/* BlueZ bluetooth extended inquiry response protocol: shorten local name */
+#define EIR_NAME_SHORT 0x08
+
 /* Maximum number of characters in message filenames */
 #define FILENAME_BUFFER 256
 
-/* Length of Bluetooth MAC address */
+/* Length of a Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
+
+/* Length of time in Epoch */
+#define LENGTH_OF_TIME 10
 
 /* Transmission range limiter that only allows devices in the RSSI range to
  * connect */
@@ -105,27 +124,11 @@
  * scanned devices */
 #define TRACKING_BUFFER 1024
 
-/* Command opcode pack/unpack from HCI library */
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
-
-/* BlueZ bluetooth extended inquiry response protocol: flags */
-#define EIR_FLAGS 0X01
-
-/* BlueZ bluetooth extended inquiry response protocol: shorten local name */
-#define EIR_NAME_SHORT 0x08
-
-/* BlueZ bluetooth extended inquiry response protocol: complete local name */
-#define EIR_NAME_COMPLETE 0x09
-
-/* BlueZ bluetooth extended inquiry response protocol: Manufacturer Specific
- * Data */
-#define EIR_MANUFACTURE_SPECIFIC_DATA 0xFF
-
 /*
  * GLOBAL VARIABLES
  */
 
-/* The path of object push file */
+/* The path of the object push file */
 char *g_filepath;
 
 /* The first timestamp of the output file used for tracking scanned devices */

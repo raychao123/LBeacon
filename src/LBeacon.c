@@ -48,7 +48,7 @@
 /*
  *  get_config:
  *
- *  While not end of file, this function will go throught the config file, read
+ *  While not end of file, this function will go through the config file, read
  *  line by line, and store the data into the global variable of a Config
  *  struct.
  *
@@ -61,7 +61,7 @@
  *  config - Config struct including filepath, coordinates, etc.
  */
 Config get_config(char *filename) {
-    /* Return variable is a struct that contains all config information */
+    /* Return value that contains a struct of all config information */
     Config config;
 
     FILE *file = fopen(filename, "r");
@@ -69,13 +69,13 @@ Config get_config(char *filename) {
         /* Error handling */
         perror("Error opening file");
     } else {
-        /* Stores the string of current line being read */
+        /* Stores the string of the current line being read */
         char config_setting[CONFIG_BUFFER];
 
         /* Keeps track of which line is being processed */
         int line = 0;
 
-        /* Keep reading the each line and store into the config struct */
+        /* Keep reading each line and store into the config struct */
         while (fgets(config_setting, sizeof(config_setting), file) != NULL) {
             char *config_message;
             config_message = strstr((char *)config_setting, DELIMITER);
@@ -188,7 +188,7 @@ bool is_used_address(char address[]) {
         temp = temp->next;
     }
 
-    /* Input MAC address is new and not used */
+    /* Input MAC address is new and unused */
     return false;
 }
 
@@ -196,9 +196,9 @@ bool is_used_address(char address[]) {
  *  send_to_push_dongle:
  *
  *  For each new scanned bluetooth device, this function adds the scanned device
- *  to the linked list of ScannedDevice struct that stores it scanned timestamp
- *  and MAC address and the queue of MAC addresses waiting for an available
- *  thread to send the message to the its device.
+ *  to the linked list of ScannedDevice struct that stores its scanned timestamp
+ *  and MAC address and to the queue of MAC addresses waiting for an available
+ *  thread to send the message to its device.
  *
  *  Parameters:
  *
@@ -210,16 +210,16 @@ bool is_used_address(char address[]) {
  *  None
  */
 void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
-    /* Store the MAC address as string */
+    /* Stores the MAC address as a string */
     char address[LENGTH_OF_MAC_ADDRESS];
 
     /* An iterator through each MAC address character */
     int mac_address_iterator;
 
-    /* Converts the bluetooth device address to string */
+    /* Converts the bluetooth device address to a string */
     ba2str(bluetooth_device_address, address);
 
-    /* Add to linked list and queue for new scanned devices */
+    /* Add to the linked list and the queue for new scanned devices */
     if (is_used_address(address) == false) {
         ScannedDevice data;
         data.initial_scanned_time = get_system_time();
@@ -340,8 +340,8 @@ void *send_file(void *id) {
              device_id++) {
             if (device_id == thread_id &&
                 g_idle_handler[device_id].is_waiting_to_send == true) {
-                /* Depending on the number of push dongles, split each thread
-                 * evenly and assign each to a push dongle device ID */
+                /* Depending on the number of push dongles, split the threads
+                 * evenly and assign each thread to a push dongle device ID */
                 for (push_dongle_id = 0;
                      push_dongle_id < number_of_push_dongles;
                      push_dongle_id++) {
@@ -500,10 +500,10 @@ void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
  *
  *  This function scans continuously for bluetooth devices under the beacon
  *  until there is a need to cancel scanning. For each scanned device, it will
- *  fall under one of three cases. A bluetooth device with no RSSI value, a
+ *  fall under one of three cases: a bluetooth device with no RSSI value, a
  *  bluetooth device with a RSSI value, or if the user wants to cancel scanning.
  *  When the device is within RSSI value, the bluetooth device will be added to
- *  the push list so the message can be sent to the phone.
+ *  the linked list so the message can be sent to the phone.
  *
  *  Parameters:
  *
@@ -681,7 +681,7 @@ void *cleanup_linked_list(void) {
  *  This function tracks the MAC addresses of scanned bluetooth devices under
  *  the beacon. An output file will contain each timestamp and the MAC addresses
  *  of the scanned bluetooth devices at the given timestamp. Format timestamp
- *  and MAC addresses into a char[] and append new line to end of file. " - " is
+ *  and MAC addresses into a string and append new line to end of file. " - " is
  *  used to separate timestamp with MAC address and ", " is used to separate
  *  each MAC address.
  *
@@ -698,14 +698,14 @@ void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
     /* Scanned MAC address */
     char address[LENGTH_OF_MAC_ADDRESS];
 
-    /* Converts long long type to string */
-    char long_long_to_string[10];
+    /* Converts long long type to a string */
+    char long_long_to_string[LENGTH_OF_TIME];
 
     /* Get current timestamp when tracking bluetooth devices */
     unsigned timestamp = (unsigned)time(NULL);
     sprintf(long_long_to_string, "%u", timestamp);
 
-    /* File is empty, create new file with LBeacon ID */
+    /* If file is empty, create new file with LBeacon UUID */
     if (0 == g_size_of_file) {
         FILE *output = fopen(filename, "w+"); /* w+ overwrites the file */
         if (output == NULL) {
@@ -713,7 +713,7 @@ void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
             perror("Error opening file");
             return;
         }
-        fputs("LBeacon ID: ", output);
+        fputs("LBeacon UUID: ", output);
         fputs(g_config.uuid, output);
         fclose(output);
         g_size_of_file++;
@@ -721,7 +721,7 @@ void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
         memset(&address[0], 0, sizeof(address));
     }
 
-    /* Converts the bluetooth device address to string */
+    /* Converts the bluetooth device address to a string */
     ba2str(bluetooth_device_address, address);
 
     FILE *output;
@@ -734,11 +734,11 @@ void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
         return;
     }
 
-    /* Go through the whole file to get to last line */
+    /* Go through the whole file to get to the last line */
     while (fgets(line, TRACKING_BUFFER, output) != NULL) {
     }
 
-    /* If timestamp already exists, add MAC address to end of previous line
+    /* If timestamp already exists, add MAC address to end of the previous line
      * otherwise create a new line */
     if (timestamp != g_most_recent_timestamp_of_file) {
         fputs("\n", output);
@@ -750,7 +750,7 @@ void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
         g_most_recent_timestamp_of_file = timestamp;
         g_size_of_file++;
     } else {
-        /* Double check that MAC address is not already added at a given
+        /* Double check that the MAC address is not already added at a given
          * timestamp */
         if (strstr(line, address) == NULL) {
             fputs(", ", output);
@@ -788,9 +788,9 @@ char *choose_file(char *message_to_send) {
     struct dirent *groupent; /* A dirent struct that stores directory info */
     int message_id = 0;      /* A iterator for number of messages and groups */
     int group_id = 0;        /* A iterator for number of groups */
-    char *return_value;      /* Return value; converts filepath to a string */
+    char *return_value;      /* Return value which turns filepath to a string */
 
-    /* Convert number of groups and messages from string to integer. */
+    /* Convert number of groups and messages from a string to an integer */
     int number_of_groups = atoi(g_config.number_of_groups);
     int number_of_messages = atoi(g_config.number_of_messages);
 
@@ -824,7 +824,7 @@ char *choose_file(char *message_to_send) {
 
     /* Go through each message in directory and store each file name */
     for (group_id = 0; group_id < number_of_groups; group_id++) {
-        /* Concatenate strings to make file path */
+        /* Concatenate strings to make filepath */
         sprintf(filepath, "/home/pi/LBeacon/messages/");
         strcat(filepath, groups[group_id]);
 
@@ -1123,7 +1123,7 @@ void *ble_beacon(void *beacon_location) {
             sleep(1);
         }
 
-        /* When signal received, disable message advertising */
+        /* When signal is received, disable message advertising */
         perror("Shutting down");
         disable_advertising();
     }
@@ -1139,10 +1139,10 @@ int main(int argc, char **argv) {
     /* Buffer that contains the location of the beacon */
     char hex_c[CONFIG_BUFFER];
 
-    /* Return value of pthread_create to check for errors */
+    /* Return value of pthread_create used to check for errors */
     int return_value;
 
-    /* Load config */
+    /* Load config struct */
     g_config = get_config(CONFIG_FILENAME);
     g_filepath = malloc(g_config.filepath_length + g_config.filename_length);
     if (g_filepath == NULL) {
@@ -1178,7 +1178,7 @@ int main(int argc, char **argv) {
         g_idle_handler[device_id].is_waiting_to_send = false;
     }
 
-    /* Store coordinates of beacon location */
+    /* Store coordinates of the beacon location */
     sprintf(hex_c, "E2C56DB5DFFB48D2B060D0F5%02x%02x%02x%02x%02x%02x%02x%02x",
             coordinate_X.b[0], coordinate_X.b[1], coordinate_X.b[2],
             coordinate_X.b[3], coordinate_Y.b[0], coordinate_Y.b[1],
@@ -1195,7 +1195,7 @@ int main(int argc, char **argv) {
         pthread_exit(NULL);
     }
 
-    /* Clean up linked list */
+    /* Clean up the linked list */
     pthread_t cleanup_linked_list_id;
     return_value = pthread_create(&cleanup_linked_list_id, NULL,
                                   (void *)cleanup_linked_list, NULL);
@@ -1216,7 +1216,7 @@ int main(int argc, char **argv) {
         pthread_exit(NULL);
     }
 
-    /* Send message to scanned MAC address */
+    /* Send message to the scanned MAC address */
     pthread_t send_file_id[maximum_number_of_devices];
     for (device_id = 0; device_id < maximum_number_of_devices; device_id++) {
         return_value = pthread_create(&send_file_id[device_id], NULL,

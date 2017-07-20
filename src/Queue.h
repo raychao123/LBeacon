@@ -44,7 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Length of Bluetooth MAC address*/
+/* Length of a Bluetooth MAC address*/
 #define LENGTH_OF_MAC_ADDRESS 18
 
 /* Struct for each node in the queue; data is the MAC address */

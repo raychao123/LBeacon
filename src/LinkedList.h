@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Length of Bluetooth MAC address */
+/* Length of a Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
 
 /* Struct for storing scanned timestamp and MAC address of the user's device */
