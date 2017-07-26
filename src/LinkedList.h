@@ -13,7 +13,7 @@
  *
  * File Description:
  *
- *      This is the header file containing the function declarations and
+ *      This header file contains the function declarations and
  *      variables used in the LinkedList.c file.
  *
  * File Name:

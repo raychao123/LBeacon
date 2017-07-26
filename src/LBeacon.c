@@ -13,10 +13,10 @@
  *
  * File Description:
  *
- *      This file contains the program to allow the beacon to detect phones and
- *      then scan for the phones' Bluetooth addresses. Depending on the RSSI
- *      value, it will determine if it should send location related files to the
- *      user. The detection is based on BLE or OBEX.
+ *      This file contains the program to allow the beacon to discover bluetooth
+ *	devices and then scan the Bluetooth addresses of the devices. Depending
+ *	on the RSSI value of each discovered and scanned deviced, the beacon
+ * 	determines whether it should send location related files to the device.
  *
  * File Name:
  *
@@ -48,9 +48,8 @@
 /*
  *  get_config:
  *
- *  While not end of file, this function will go through the config file, read
- *  line by line, and store the data into the global variable of a Config
- *  struct.
+ *  This function will go through the config file, read line by line until the
+ *  end of file, and store the data into the global variable of a Config struct.
  *
  *  Parameters:
  *
@@ -68,9 +67,10 @@ Config get_config(char *filename) {
     if (file == NULL) {
         /* Error handling */
         perror("Error opening file");
+	fprintf(stderr, "Error: %s\n", strerror(errno));
     } else {
         /* Stores the string of the current line being read */
-        char config_setting[CONFIG_BUFFER];
+        char config_setting[CONFIG_BUFFER_SIZE];
 
         /* Keeps track of which line is being processed */
         int line = 0;
@@ -80,48 +80,60 @@ Config get_config(char *filename) {
             char *config_message;
             config_message = strstr((char *)config_setting, DELIMITER);
             config_message = config_message + strlen(DELIMITER);
-            if (0 == line) {
+	    switch (line) {
+            case 0:
                 memcpy(config.coordinate_X, config_message,
                        strlen(config_message));
                 config.coordinate_X_length = strlen(config_message);
-            } else if (1 == line) {
+		break;
+            case 1:
                 memcpy(config.coordinate_Y, config_message,
                        strlen(config_message));
                 config.coordinate_Y_length = strlen(config_message);
-            } else if (2 == line) {
+		break;
+            case 2:
                 memcpy(config.coordinate_Z, config_message,
                        strlen(config_message));
                 config.coordinate_Z_length = strlen(config_message);
-            } else if (3 == line) {
+		break;
+            case 3:
                 memcpy(config.filename, config_message, strlen(config_message));
                 config.filename_length = strlen(config_message);
-            } else if (4 == line) {
+		break;
+            case 4:
                 memcpy(config.filepath, config_message, strlen(config_message));
                 config.filepath_length = strlen(config_message);
-            } else if (5 == line) {
+		break;
+            case 5:
                 memcpy(config.maximum_number_of_devices, config_message,
                        strlen(config_message));
                 config.maximum_number_of_devices_length =
                     strlen(config_message);
-            } else if (6 == line) {
+		break;
+            case 6:
                 memcpy(config.number_of_groups, config_message,
                        strlen(config_message));
                 config.number_of_groups_length = strlen(config_message);
-            } else if (7 == line) {
+		break;
+            case 7:
                 memcpy(config.number_of_messages, config_message,
                        strlen(config_message));
                 config.number_of_messages_length = strlen(config_message);
-            } else if (8 == line) {
+		break;
+            case 8:
                 memcpy(config.number_of_push_dongles, config_message,
                        strlen(config_message));
                 config.number_of_push_dongles_length = strlen(config_message);
-            } else if (9 == line) {
+		break;
+            case 9:
                 memcpy(config.rssi_coverage, config_message,
                        strlen(config_message));
                 config.rssi_coverage_length = strlen(config_message);
-            } else if (10 == line) {
+		break;
+            case 10:
                 memcpy(config.uuid, config_message, strlen(config_message));
                 config.uuid_length = strlen(config_message);
+		break;
             }
             line++;
         }
@@ -160,7 +172,7 @@ long long get_system_time() {
 }
 
 /*
- *  is_used_address:
+ *  check_is_used_address:
  *
  *  This helper function checks whether the specified MAC address given as input
  *  is in the linked list with recently scanned bluetooth devices. If it is, the
@@ -175,7 +187,7 @@ long long get_system_time() {
  *  true - used MAC address
  *  false - new MAC address
  */
-bool is_used_address(char address[]) {
+bool check_is_used_address(char address[]) {
     /* Create a temporary node and set as the head */
     LinkedListNode *temp = linked_list_head;
 
@@ -220,7 +232,7 @@ void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
     ba2str(bluetooth_device_address, address);
 
     /* Add to the linked list and the queue for new scanned devices */
-    if (is_used_address(address) == false) {
+    if (check_is_used_address(address) == false) {
         ScannedDevice data;
         data.initial_scanned_time = get_system_time();
         for (mac_address_iterator = 0;
@@ -263,7 +275,7 @@ void *queue_to_array() {
     int mac_address_iterator;
 
     /* An indicator for continuing to check for unused threads */
-    bool cancelled = false;
+    cancelled = false;
 
     while (cancelled == false) {
         /* Go through the array of ThreadStatus */
@@ -333,7 +345,7 @@ void *send_file(void *id) {
     int mac_address_iterator;
 
     /* An indicator for continuing to send messages */
-    bool cancelled = false;
+    cancelled = false;
 
     while (cancelled == false) {
         for (device_id = 0; device_id < maximum_number_of_devices;
@@ -503,7 +515,7 @@ void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
  *  fall under one of three cases: a bluetooth device with no RSSI value, a
  *  bluetooth device with a RSSI value, or if the user wants to cancel scanning.
  *  When the device is within RSSI value, the bluetooth device will be added to
- *  the linked list so the message can be sent to the phone.
+ *  the linked list so a message can be sent to the device.
  *
  *  Parameters:
  *
@@ -576,7 +588,7 @@ void start_scanning() {
     output.events = POLLIN | POLLERR | POLLHUP;
 
     /* An indicator for continuing to scan for devices */
-    bool cancelled = false;
+    cancelled = false;
 
     while (cancelled == false) {
         output.revents = 0;
@@ -656,7 +668,7 @@ void start_scanning() {
  */
 void *cleanup_linked_list(void) {
     /* An indicator for continuing to clean the linked list */
-    bool cancelled = false;
+    cancelled = false;
 
     while (cancelled == false) {
         /* Create a temporary node and set as the head */
@@ -886,17 +898,19 @@ void pthread_create_error_message(int error_code) {
 /*
  *  enable_advertising:
  *
- *  @todo
+ *  This function enables the LBeacon to start advertising, sets the time
+ *  interval for advertising, and calibrates the RSSI value.
  *
  *  Parameters:
  *
- *  advertising_interval - @todo
- *  advertising_uuid - @todo
- *  rssi_value - @todo
+ *  advertising_interval - the time interval for whic the LBeacon can advertise
+ *  advertising_uuid - universally unique identifier for advertising
+ *  rssi_value - RSSI value of the bluetooth device
  *
  *  Return value:
  *
- *  data - @todo
+ *  1 - If there is an error, 1 is returned.
+ *  0 - If advertising was successfullly enabled, then the function returns 0.
  */
 int enable_advertising(int advertising_interval, char *advertising_uuid,
                        int rssi_value) {
@@ -1036,7 +1050,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 /*
  *  disable_advertising:
  *
- *  @todo
+ *  This function disables the advertising capabilities of the beacon
  *
  *  Parameters:
  *
@@ -1044,7 +1058,8 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
  *
  *  Return value:
  *
- *  @todo
+ *  1 - If there is an error, 1 is returned.
+ *  0 - If advertising was successfullly disabled, 0 is returned.
  */
 int disable_advertising() {
     int dongle_device_id = hci_get_route(NULL);
@@ -1137,7 +1152,7 @@ int main(int argc, char **argv) {
     int mac_address_iterator;
 
     /* Buffer that contains the location of the beacon */
-    char hex_c[CONFIG_BUFFER];
+    char hex_c[CONFIG_BUFFER_SIZE];
 
     /* Return value of pthread_create used to check for errors */
     int return_value;
@@ -1229,7 +1244,7 @@ int main(int argc, char **argv) {
     }
 
     /* An indicator for continuing to run the beacon */
-    bool cancelled = false;
+    cancelled = false;
 
     /* Start scanning for bluetooth devices */
     while (cancelled == false) {

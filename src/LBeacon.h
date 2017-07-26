@@ -82,7 +82,7 @@
 #define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
 
 /* Maximum number of characters in each line of config file */
-#define CONFIG_BUFFER 64
+#define CONFIG_BUFFER_SIZE 64
 
 /* Filepath of the config file */
 #define CONFIG_FILENAME "../config/config.conf"
@@ -107,7 +107,7 @@
 #define FILENAME_BUFFER 256
 
 /* Length of a Bluetooth MAC address */
-#define LENGTH_OF_MAC_ADDRESS 18
+//#define LENGTH_OF_MAC_ADDRESS 18
 
 /* Length of time in Epoch */
 #define LENGTH_OF_TIME 10
@@ -140,6 +140,9 @@ unsigned g_most_recent_timestamp_of_file = 0;
 /* Number of lines in the output file used for tracking scanned devices */
 int g_size_of_file = 0;
 
+/* An indicator for continuing to do functions' work */
+bool cancelled = false;
+
 /*
  * UNION
  */
@@ -167,38 +170,38 @@ union {
 
 typedef struct Config {
     /* A string representation of the X coordinate of the beacon location */
-    char coordinate_X[CONFIG_BUFFER];
+    char coordinate_X[CONFIG_BUFFER_SIZE];
 
     /* A string representation of the Y coordinate of the beacon location */
-    char coordinate_Y[CONFIG_BUFFER];
+    char coordinate_Y[CONFIG_BUFFER_SIZE];
 
     /* A string representation of the Z coordinate of the beacon location */
-    char coordinate_Z[CONFIG_BUFFER];
+    char coordinate_Z[CONFIG_BUFFER_SIZE];
 
     /* A string representation of the message filename */
-    char filename[CONFIG_BUFFER];
+    char filename[CONFIG_BUFFER_SIZE];
 
     /* A string representation of the message filename's filepath */
-    char filepath[CONFIG_BUFFER];
+    char filepath[CONFIG_BUFFER_SIZE];
 
     /* A string representation of the maximum number of devices to be handled by
      * all push dongles */
-    char maximum_number_of_devices[CONFIG_BUFFER];
+    char maximum_number_of_devices[CONFIG_BUFFER_SIZE];
 
     /* A string representation of number of message groups */
-    char number_of_groups[CONFIG_BUFFER];
+    char number_of_groups[CONFIG_BUFFER_SIZE];
 
     /* A string representation of the number of messages */
-    char number_of_messages[CONFIG_BUFFER];
+    char number_of_messages[CONFIG_BUFFER_SIZE];
 
     /* A string representation of the number of push dongles */
-    char number_of_push_dongles[CONFIG_BUFFER];
+    char number_of_push_dongles[CONFIG_BUFFER_SIZE];
 
     /* A string representation of the required signal strength */
-    char rssi_coverage[CONFIG_BUFFER];
+    char rssi_coverage[CONFIG_BUFFER_SIZE];
 
     /* A string representation of the universally unique identifer */
-    char uuid[CONFIG_BUFFER];
+    char uuid[CONFIG_BUFFER_SIZE];
 
     /* The string length needed to store coordinate_X */
     int coordinate_X_length;
@@ -252,7 +255,7 @@ ThreadStatus *g_idle_handler;
 
 Config get_config(char *filename);
 long long get_system_time();
-bool is_used_address(char address[]);
+bool check_is_used_address(char address[]);
 void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi);
 void *queue_to_array();
 void *send_file(void *id);
