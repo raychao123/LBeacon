@@ -79,7 +79,7 @@
  */
 
 /* Command opcode pack/unpack from HCI library */
-#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff)|(ogf << 10))
+#define cmd_opcode_pack(ogf, ocf) (uint16_t)((ocf & 0x03ff) | (ogf << 10))
 
 /* Maximum number of characters in each line of config file */
 #define CONFIG_BUFFER_SIZE 64
@@ -106,18 +106,15 @@
 /* Maximum number of characters in message filenames */
 #define FILENAME_BUFFER 256
 
-/* Length of a Bluetooth MAC address */
-//#define LENGTH_OF_MAC_ADDRESS 18
-
 /* Length of time in Epoch */
 #define LENGTH_OF_TIME 10
 
-/* Transmission range limiter that only allows devices in the RSSI range to
+/* Transmission range limited. Only devices in this RSSI range are allowed to
  * connect */
 #define RSSI_RANGE -60
 
-/* Time interval, in milliseconds, that determines if the bluetooth device can
- * be removed from the push list */
+/* Time interval, in milliseconds, that determines whether the bluetooth device
+ * is to be removed from the push list */
 #define TIMEOUT 30000
 
 /* Maximum number of characters in each line of output file used for tracking
@@ -139,9 +136,6 @@ unsigned g_most_recent_timestamp_of_file = 0;
 
 /* Number of lines in the output file used for tracking scanned devices */
 int g_size_of_file = 0;
-
-/* An indicator for continuing to do functions' work */
-bool cancelled = false;
 
 /*
  * UNION
@@ -265,7 +259,6 @@ void start_scanning();
 void *cleanup_linked_list(void);
 void track_devices(bdaddr_t *bluetooth_device_address, char *filename);
 char *choose_file(char *message_to_send);
-void pthread_create_error_message(int error_code);
 int enable_advertising(int advertising_interval, char *advertising_uuid,
                        int rssi_value);
 int disable_advertising();
