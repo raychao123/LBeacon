@@ -13,10 +13,10 @@
  *
  * File Description:
  *
- *      This file contains the program to allow the beacon to detect phones and
- *      then scan for the phones' Bluetooth addresses. Depending on the RSSI
- *      value, it will determine if it should send location related files to the
- *      user. The detection is based on BLE or OBEX.
+ *      This file contains the program to allow the beacon to discover bluetooth
+ *	devices and then scan the Bluetooth addresses of the devices. Depending
+ *	on the RSSI value of each discovered and scanned deviced, the beacon
+ * 	determines whether it should send location related files to the device.
  *
  * File Name:
  *
@@ -48,9 +48,8 @@
 /*
  *  get_config:
  *
- *  While not end of file, this function will go through the config file, read
- *  line by line, and store the data into the global variable of a Config
- *  struct.
+ *  This function will go through the config file, read line by line until the
+ *  end of file, and store the data into the global variable of a Config struct.
  *
  *  Parameters:
  *
@@ -70,7 +69,7 @@ Config get_config(char *filename) {
         perror("Error opening file");
     } else {
         /* Stores the string of the current line being read */
-        char config_setting[CONFIG_BUFFER];
+        char config_setting[CONFIG_BUFFER_SIZE];
 
         /* Keeps track of which line is being processed */
         int line = 0;
@@ -80,48 +79,63 @@ Config get_config(char *filename) {
             char *config_message;
             config_message = strstr((char *)config_setting, DELIMITER);
             config_message = config_message + strlen(DELIMITER);
-            if (0 == line) {
-                memcpy(config.coordinate_X, config_message,
-                       strlen(config_message));
-                config.coordinate_X_length = strlen(config_message);
-            } else if (1 == line) {
-                memcpy(config.coordinate_Y, config_message,
-                       strlen(config_message));
-                config.coordinate_Y_length = strlen(config_message);
-            } else if (2 == line) {
-                memcpy(config.coordinate_Z, config_message,
-                       strlen(config_message));
-                config.coordinate_Z_length = strlen(config_message);
-            } else if (3 == line) {
-                memcpy(config.filename, config_message, strlen(config_message));
-                config.filename_length = strlen(config_message);
-            } else if (4 == line) {
-                memcpy(config.filepath, config_message, strlen(config_message));
-                config.filepath_length = strlen(config_message);
-            } else if (5 == line) {
-                memcpy(config.maximum_number_of_devices, config_message,
-                       strlen(config_message));
-                config.maximum_number_of_devices_length =
-                    strlen(config_message);
-            } else if (6 == line) {
-                memcpy(config.number_of_groups, config_message,
-                       strlen(config_message));
-                config.number_of_groups_length = strlen(config_message);
-            } else if (7 == line) {
-                memcpy(config.number_of_messages, config_message,
-                       strlen(config_message));
-                config.number_of_messages_length = strlen(config_message);
-            } else if (8 == line) {
-                memcpy(config.number_of_push_dongles, config_message,
-                       strlen(config_message));
-                config.number_of_push_dongles_length = strlen(config_message);
-            } else if (9 == line) {
-                memcpy(config.rssi_coverage, config_message,
-                       strlen(config_message));
-                config.rssi_coverage_length = strlen(config_message);
-            } else if (10 == line) {
-                memcpy(config.uuid, config_message, strlen(config_message));
-                config.uuid_length = strlen(config_message);
+            switch (line) {
+                case 0:
+                    memcpy(config.coordinate_X, config_message,
+                           strlen(config_message));
+                    config.coordinate_X_length = strlen(config_message);
+                    break;
+                case 1:
+                    memcpy(config.coordinate_Y, config_message,
+                           strlen(config_message));
+                    config.coordinate_Y_length = strlen(config_message);
+                    break;
+                case 2:
+                    memcpy(config.coordinate_Z, config_message,
+                           strlen(config_message));
+                    config.coordinate_Z_length = strlen(config_message);
+                    break;
+                case 3:
+                    memcpy(config.filename, config_message,
+                           strlen(config_message));
+                    config.filename_length = strlen(config_message);
+                    break;
+                case 4:
+                    memcpy(config.filepath, config_message,
+                           strlen(config_message));
+                    config.filepath_length = strlen(config_message);
+                    break;
+                case 5:
+                    memcpy(config.maximum_number_of_devices, config_message,
+                           strlen(config_message));
+                    config.maximum_number_of_devices_length =
+                        strlen(config_message);
+                    break;
+                case 6:
+                    memcpy(config.number_of_groups, config_message,
+                           strlen(config_message));
+                    config.number_of_groups_length = strlen(config_message);
+                    break;
+                case 7:
+                    memcpy(config.number_of_messages, config_message,
+                           strlen(config_message));
+                    config.number_of_messages_length = strlen(config_message);
+                    break;
+                case 8:
+                    memcpy(config.number_of_push_dongles, config_message,
+                           strlen(config_message));
+                    config.number_of_push_dongles_length =
+                        strlen(config_message);
+                    break;
+                case 9:
+                    memcpy(config.rssi_coverage, config_message,
+                           strlen(config_message));
+                    config.rssi_coverage_length = strlen(config_message);
+                    break;
+                case 10:
+                    memcpy(config.uuid, config_message, strlen(config_message));
+                    config.uuid_length = strlen(config_message);
+                    break;
             }
             line++;
         }
@@ -160,7 +174,7 @@ long long get_system_time() {
 }
 
 /*
- *  is_used_address:
+ *  check_is_used_address:
  *
  *  This helper function checks whether the specified MAC address given as input
  *  is in the linked list with recently scanned bluetooth devices. If it is, the
@@ -175,14 +189,18 @@ long long get_system_time() {
  *  true - used MAC address
  *  false - new MAC address
  */
-bool is_used_address(char address[]) {
+bool check_is_used_address(char address[]) {
     /* Create a temporary node and set as the head */
     LinkedListNode *temp = linked_list_head;
 
     /* Go through list */
     while (temp != NULL) {
         /* Input MAC address exists in the linked list */
-        if (0 == strcmp(address, temp->data.scanned_mac_address)) {
+        int len = strlen(address);
+        char *addr_last_two = &address[len - 2];
+        char *temp_last_two = &temp->data.scanned_mac_address[len - 2];
+        if ((!strncmp(address, temp->data.scanned_mac_address, 2)) &&
+            (!strncmp(addr_last_two, temp_last_two, 2))) {
             return true;
         }
         temp = temp->next;
@@ -213,23 +231,16 @@ void send_to_push_dongle(bdaddr_t *bluetooth_device_address, int rssi) {
     /* Stores the MAC address as a string */
     char address[LENGTH_OF_MAC_ADDRESS];
 
-    /* An iterator through each MAC address character */
-    int mac_address_iterator;
-
     /* Converts the bluetooth device address to a string */
     ba2str(bluetooth_device_address, address);
+    strcat(address, "\0");
 
     /* Add to the linked list and the queue for new scanned devices */
-    if (is_used_address(address) == false) {
+    if (check_is_used_address(address) == false) {
         ScannedDevice data;
         data.initial_scanned_time = get_system_time();
-        for (mac_address_iterator = 0;
-             mac_address_iterator < LENGTH_OF_MAC_ADDRESS;
-             mac_address_iterator++) {
-            data.scanned_mac_address[mac_address_iterator] =
-                address[mac_address_iterator];
-        }
-        insert_first(data);
+        strncpy(data.scanned_mac_address, address, LENGTH_OF_MAC_ADDRESS);
+        insert_first(data, LENGTH_OF_MAC_ADDRESS);
         enqueue(address);
         print_linked_list();
         print_queue();
@@ -259,13 +270,10 @@ void *queue_to_array() {
     /* An iterator through the array of ScannedDevice struct */
     int device_id;
 
-    /* An iterator through each MAC address character */
-    int mac_address_iterator;
-
     /* An indicator for continuing to check for unused threads */
-    bool cancelled = false;
+    bool check_thread_status_cancelled = false;
 
-    while (cancelled == false) {
+    while (check_thread_status_cancelled == false) {
         /* Go through the array of ThreadStatus */
         for (device_id = 0; device_id < maximum_number_of_devices;
              device_id++) {
@@ -273,13 +281,8 @@ void *queue_to_array() {
             /* Add MAC address to the array and dequeue when a thread becomes
              * available */
             if (g_idle_handler[device_id].idle == -1 && address != NULL) {
-                for (mac_address_iterator = 0;
-                     mac_address_iterator < LENGTH_OF_MAC_ADDRESS;
-                     mac_address_iterator++) {
-                    g_idle_handler[device_id]
-                        .scanned_mac_address[mac_address_iterator] =
-                        address[mac_address_iterator];
-                }
+                strncpy(g_idle_handler[device_id].scanned_mac_address, address,
+                        LENGTH_OF_MAC_ADDRESS);
                 dequeue();
                 g_idle_handler[device_id].idle = device_id;
                 g_idle_handler[device_id].is_waiting_to_send = true;
@@ -329,13 +332,10 @@ void *send_file(void *id) {
     /* An iterator through a block of devices per dongle */
     int block_id;
 
-    /* An iterator through each MAC address character */
-    int mac_address_iterator;
-
     /* An indicator for continuing to send messages */
-    bool cancelled = false;
+    bool send_messages_cancelled = false;
 
-    while (cancelled == false) {
+    while (send_messages_cancelled == false) {
         for (device_id = 0; device_id < maximum_number_of_devices;
              device_id++) {
             if (device_id == thread_id &&
@@ -363,12 +363,8 @@ void *send_file(void *id) {
                 if (0 > dongle_device_id || 0 > socket) {
                     /* Error handling */
                     perror("Error opening socket");
-                    for (mac_address_iterator = 0;
-                         mac_address_iterator < LENGTH_OF_MAC_ADDRESS;
-                         mac_address_iterator++) {
-                        g_idle_handler[device_id]
-                            .scanned_mac_address[mac_address_iterator] = 0;
-                    }
+                    strncpy(g_idle_handler[device_id].scanned_mac_address, "0",
+                            LENGTH_OF_MAC_ADDRESS);
                     g_idle_handler[device_id].idle = -1;
                     g_idle_handler[device_id].is_waiting_to_send = false;
                     break;
@@ -394,12 +390,8 @@ void *send_file(void *id) {
                 if (client == NULL) {
                     /* Error handling */
                     perror("Error opening obexftp client");
-                    for (mac_address_iterator = 0;
-                         mac_address_iterator < LENGTH_OF_MAC_ADDRESS;
-                         mac_address_iterator++) {
-                        g_idle_handler[device_id]
-                            .scanned_mac_address[mac_address_iterator] = 0;
-                    }
+                    strncpy(g_idle_handler[device_id].scanned_mac_address, "0",
+                            LENGTH_OF_MAC_ADDRESS);
                     g_idle_handler[device_id].idle = -1;
                     g_idle_handler[device_id].is_waiting_to_send = false;
                     close(socket);
@@ -416,12 +408,8 @@ void *send_file(void *id) {
                     perror("Error connecting to obexftp device");
                     obexftp_close(client);
                     client = NULL;
-                    for (mac_address_iterator = 0;
-                         mac_address_iterator < LENGTH_OF_MAC_ADDRESS;
-                         mac_address_iterator++) {
-                        g_idle_handler[device_id]
-                            .scanned_mac_address[mac_address_iterator] = 0;
-                    }
+                    strncpy(g_idle_handler[device_id].scanned_mac_address, "0",
+                            LENGTH_OF_MAC_ADDRESS);
                     g_idle_handler[device_id].idle = -1;
                     g_idle_handler[device_id].is_waiting_to_send = false;
                     close(socket);
@@ -445,12 +433,8 @@ void *send_file(void *id) {
                 /* Close socket */
                 obexftp_close(client);
                 client = NULL;
-                for (mac_address_iterator = 0;
-                     mac_address_iterator < LENGTH_OF_MAC_ADDRESS;
-                     mac_address_iterator++) {
-                    g_idle_handler[device_id]
-                        .scanned_mac_address[mac_address_iterator] = 0;
-                }
+                strncpy(g_idle_handler[device_id].scanned_mac_address, "0",
+                        LENGTH_OF_MAC_ADDRESS);
                 g_idle_handler[device_id].idle = -1;
                 g_idle_handler[device_id].is_waiting_to_send = false;
                 close(socket);
@@ -483,6 +467,7 @@ void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
 
     /* Converts the bluetooth device address to string */
     ba2str(bluetooth_device_address, address);
+    strcat(address, "\0");
 
     /* Print bluetooth device's RSSI value */
     printf("%17s", address);
@@ -499,11 +484,11 @@ void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
  *  start_scanning:
  *
  *  This function scans continuously for bluetooth devices under the beacon
- *  until there is a need to cancel scanning. For each scanned device, it will
- *  fall under one of three cases: a bluetooth device with no RSSI value, a
- *  bluetooth device with a RSSI value, or if the user wants to cancel scanning.
+ *  until there is a need to cancel scanning. Each scanned device will fall
+ *  under one of three cases: a bluetooth device with no RSSI value, a bluetooth
+ *  device with a RSSI value, or if the user wants to cancel scanning.
  *  When the device is within RSSI value, the bluetooth device will be added to
- *  the linked list so the message can be sent to the phone.
+ *  the linked list so a message can be sent to the device.
  *
  *  Parameters:
  *
@@ -576,9 +561,9 @@ void start_scanning() {
     output.events = POLLIN | POLLERR | POLLHUP;
 
     /* An indicator for continuing to scan for devices */
-    bool cancelled = false;
+    bool scan_devices_cancelled = false;
 
-    while (cancelled == false) {
+    while (scan_devices_cancelled == false) {
         output.revents = 0;
 
         /* Poll the bluetooth device for an event */
@@ -626,7 +611,7 @@ void start_scanning() {
 
                 /* Stop the scanning process */
                 case EVT_INQUIRY_COMPLETE: {
-                    cancelled = true;
+                    scan_devices_cancelled = true;
                 } break;
 
                 default:
@@ -634,6 +619,7 @@ void start_scanning() {
             }
         }
     }
+
     printf("Scanning done\n");
     close(socket);
 }
@@ -656,9 +642,9 @@ void start_scanning() {
  */
 void *cleanup_linked_list(void) {
     /* An indicator for continuing to clean the linked list */
-    bool cancelled = false;
+    bool clean_linked_list_cancelled = false;
 
-    while (cancelled == false) {
+    while (clean_linked_list_cancelled == false) {
         /* Create a temporary node and set as the head */
         LinkedListNode *temp = linked_list_head;
 
@@ -723,6 +709,7 @@ void track_devices(bdaddr_t *bluetooth_device_address, char *filename) {
 
     /* Converts the bluetooth device address to a string */
     ba2str(bluetooth_device_address, address);
+    strcat(address, "\0");
 
     FILE *output;
     char line[TRACKING_BUFFER];
@@ -860,43 +847,21 @@ char *choose_file(char *message_to_send) {
 }
 
 /*
- *  pthread_create_error_message:
- *
- *  This function receives the return value of pthread_create when there is an
- *  error and it prints the specific error description.
- *
- *  Parameters:
- *
- *  error_code - return value of the pthread_create function
- *
- *  Return value:
- *
- *  None
- */
-void pthread_create_error_message(int error_code) {
-    if (error_code == 1) {
-        perror("[EPERM] Operation not permitted");
-    } else if (error_code == 11) {
-        perror("[EAGAIN] Resource temporarily unavailable");
-    } else if (error_code == 22) {
-        perror("[EINAL] Invalid argument");
-    }
-}
-
-/*
  *  enable_advertising:
  *
- *  @todo
+ *  This function enables the LBeacon to start advertising, sets the time
+ *  interval for advertising, and calibrates the RSSI value.
  *
  *  Parameters:
  *
- *  advertising_interval - @todo
- *  advertising_uuid - @todo
- *  rssi_value - @todo
+ *  advertising_interval - the time interval for whic the LBeacon can advertise
+ *  advertising_uuid - universally unique identifier for advertising
+ *  rssi_value - RSSI value of the bluetooth device
  *
  *  Return value:
  *
- *  data - @todo
+ *  1 - If there is an error, 1 is returned.
+ *  0 - If advertising was successfullly enabled, then the function returns 0.
  */
 int enable_advertising(int advertising_interval, char *advertising_uuid,
                        int rssi_value) {
@@ -1036,7 +1001,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 /*
  *  disable_advertising:
  *
- *  @todo
+ *  This function disables the advertising capabilities of the beacon
  *
  *  Parameters:
  *
@@ -1044,7 +1009,8 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
  *
  *  Return value:
  *
- *  @todo
+ *  1 - If there is an error, 1 is returned.
+ *  0 - If advertising was successfullly disabled, 0 is returned.
  */
 int disable_advertising() {
     int dongle_device_id = hci_get_route(NULL);
@@ -1089,13 +1055,14 @@ int disable_advertising() {
 }
 
 /*
- *  ble_beacon:
+ *  control_advertising:
  *
- *  @todo
+ *  This function allows avertising to be stopped with ctrl-c if
+ *  enable_advertising was a success.
  *
  *  Parameters:
  *
- *  beacon_location - @todo
+ *  beacon_location - advertising uuid
  *
  *  Return value:
  *
@@ -1133,11 +1100,8 @@ int main(int argc, char **argv) {
     /* An iterator through the array of ScannedDevice struct */
     int device_id;
 
-    /* An iterator through each MAC address character */
-    int mac_address_iterator;
-
     /* Buffer that contains the location of the beacon */
-    char hex_c[CONFIG_BUFFER];
+    char hex_c[CONFIG_BUFFER_SIZE];
 
     /* Return value of pthread_create used to check for errors */
     int return_value;
@@ -1168,12 +1132,8 @@ int main(int argc, char **argv) {
 
     /* Initialize each ThreadStatus struct in the array */
     for (device_id = 0; device_id < maximum_number_of_devices; device_id++) {
-        for (mac_address_iterator = 0;
-             mac_address_iterator < LENGTH_OF_MAC_ADDRESS;
-             mac_address_iterator++) {
-            g_idle_handler[device_id]
-                .scanned_mac_address[mac_address_iterator] = 0;
-        }
+        strncpy(g_idle_handler[device_id].scanned_mac_address, "0",
+                LENGTH_OF_MAC_ADDRESS);
         g_idle_handler[device_id].idle = -1;
         g_idle_handler[device_id].is_waiting_to_send = false;
     }
@@ -1191,7 +1151,6 @@ int main(int argc, char **argv) {
     if (return_value != 0) {
         /* Error handling */
         perror("Error with ble_beacon using pthread_create");
-        pthread_create_error_message(return_value);
         pthread_exit(NULL);
     }
 
@@ -1202,7 +1161,6 @@ int main(int argc, char **argv) {
     if (return_value != 0) {
         /* Error handling */
         perror("Error with cleanup_linked_list using pthread_create");
-        pthread_create_error_message(return_value);
         pthread_exit(NULL);
     }
 
@@ -1212,7 +1170,6 @@ int main(int argc, char **argv) {
         pthread_create(&queue_to_array_id, NULL, (void *)queue_to_array, NULL);
     if (return_value != 0) {
         perror("Error with queue_to_array using pthread_create");
-        pthread_create_error_message(return_value);
         pthread_exit(NULL);
     }
 
@@ -1223,19 +1180,46 @@ int main(int argc, char **argv) {
                                       (void *)send_file, (void *)device_id);
         if (return_value != 0) {
             perror("Error with send_file using pthread_create");
-            pthread_create_error_message(return_value);
             pthread_exit(NULL);
         }
     }
 
     /* An indicator for continuing to run the beacon */
-    bool cancelled = false;
+    bool start_scanning_cancelled = false;
 
     /* Start scanning for bluetooth devices */
-    while (cancelled == false) {
+    while (start_scanning_cancelled == false) {
         start_scanning();
     }
 
+    for (device_id = 0; device_id < maximum_number_of_devices; device_id++) {
+        return_value = pthread_join(send_file_id[device_id], NULL);
+        if (return_value != 0) {
+            perror("Error with send_file_id using pthread_join");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return_value = pthread_join(queue_to_array_id, NULL);
+    if (return_value != 0) {
+        perror("Error with queue_to_array_id using pthread_join");
+        exit(EXIT_FAILURE);
+    }
+
+    return_value = pthread_join(cleanup_linked_list_id, NULL);
+    if (return_value != 0) {
+        perror("Error with cleanup_linked_list_id using pthread_join");
+        exit(EXIT_FAILURE);
+    }
+
+    pthread_cancel(ble_beacon_id);
+    return_value = pthread_join(ble_beacon_id, NULL);
+    if (return_value != 0) {
+        perror("Error with ble_beacon using pthread_join");
+        exit(EXIT_FAILURE);
+    }
+
+    free(g_idle_handler);
     free(g_filepath);
     return 0;
 }

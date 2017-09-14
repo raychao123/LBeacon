@@ -14,12 +14,12 @@
  * File Description:
  *
  *      This file contains the implementation of a linked list data structure.
- *      It has the feature of inserting a node to the front of the linked list
- *      and deleting a specific node. It can also check the length of the linked
- *      list and print all the information stored. The purpose of this linked
- *      list implementation is to allow scanned MAC addresses and its timestamp
- *      to be stored as a way of keeping track which devices have just been
- *      scanned.
+ *      It has functions for inserting a node to the front of the linked list
+ *      and deleting a specific node. It can also check the length of the
+ *      linked list and print the information stored on all nodes in the list.
+ *      The purpose of this linked list implementation is to allow scanned MAC
+ *      addresses and its timestamp to be stored as a way of keeping track
+ *      which devices have just been scanned.
  *
  * File Name:
  *
@@ -51,26 +51,28 @@
 /* Initialize pointer to the LinkedListNode at the head of the linked list */
 LinkedListNode *linked_list_head = NULL;
 
+/* Initialize pointer to the LinkedListNode at the head of the linked list */
+LinkedListNode *linked_list_tail = NULL;
+
 /* Initialize pointer to current LinkedListNode of the linked list */
 LinkedListNode *linked_list_current = NULL;
 
 /*
  *  insert_first:
  *
- *  This function will allocate a LinkedListNode with the passed in
- *  ScannedDevice struct data and at the front of the linked list. Because the
- *  node will be placed at the front of the list, the head will be the new
- *  LinkedListNode.
+ *  This function will allocate a LinkedListNode for the passed in
+ *  ScannedDevice struct data and insert the node at the head of linked list.
  *
  *  Parameters:
  *
  *  data - ScannedDevice struct with MAC address at the scanned timestamp
+ *  mac_address_length - the length of the mac address
  *
  *  Return value:
  *
  *  None
  */
-void insert_first(ScannedDevice data) {
+void insert_first(ScannedDevice data, int mac_address_length) {
     int mac_address;
 
     /* Create a temporary node */
@@ -79,14 +81,62 @@ void insert_first(ScannedDevice data) {
 
     /* Copy data passed into the function into the new node */
     temp->data.initial_scanned_time = data.initial_scanned_time;
-    for (mac_address = 0; mac_address < LENGTH_OF_MAC_ADDRESS; mac_address++) {
+    for (mac_address = 0; mac_address < mac_address_length; mac_address++) {
         temp->data.scanned_mac_address[mac_address] =
             data.scanned_mac_address[mac_address];
     }
 
     /* Point it to old first node and point first to new first node */
+    if (linked_list_head == NULL) {
+        temp->next = linked_list_head;
+        linked_list_head = temp;
+        linked_list_tail = linked_list_head;
+        return;
+    }
     temp->next = linked_list_head;
+    linked_list_head->prev = temp;
     linked_list_head = temp;
+}
+
+/*
+ *  insert_last:
+ *
+ *  This function will allocate a LinkedListNode for the passed in
+ *  ScannedDevice struct data and insert the node at the end of linked list.
+ *
+ *  Parameters:
+ *
+ *  data - ScannedDevice struct with MAC address at the scanned timestamp
+ *  mac_address_length - the length of the mac address
+ *
+ *  Return value:
+ *
+ *  None
+ */
+void insert_last(ScannedDevice data, int mac_address_length) {
+    int mac_address;
+
+    /* Create a temporary node */
+    struct LinkedListNode *temp =
+        (struct LinkedListNode *)malloc(sizeof(struct LinkedListNode));
+
+    /* Copy data passed into the function into the new node */
+    temp->data.initial_scanned_time = data.initial_scanned_time;
+    for (mac_address = 0; mac_address < mac_address_length; mac_address++) {
+        temp->data.scanned_mac_address[mac_address] =
+            data.scanned_mac_address[mac_address];
+    }
+
+    /* Point it to old last node and point last to new last node */
+    if (linked_list_head == NULL) {
+        temp->next = linked_list_head;
+        linked_list_head = temp;
+        linked_list_tail = linked_list_head;
+        return;
+    }
+    temp->prev = linked_list_tail;
+    linked_list_tail->next = temp;
+    linked_list_tail = temp;
 }
 
 /*
@@ -109,7 +159,6 @@ void insert_first(ScannedDevice data) {
 void delete_node(ScannedDevice data) {
     /* Start from the first node */
     struct LinkedListNode *linked_list_current = linked_list_head;
-    struct LinkedListNode *linked_list_previous = NULL;
 
     /* If head if empty, exit */
     if (linked_list_head == NULL) {
@@ -124,7 +173,6 @@ void delete_node(ScannedDevice data) {
         if (linked_list_current->next == NULL) {
             return;
         } else {
-            linked_list_previous = linked_list_current;
             linked_list_current = linked_list_current->next;
         }
     }
@@ -133,9 +181,14 @@ void delete_node(ScannedDevice data) {
     if (linked_list_current == linked_list_head) {
         linked_list_head = linked_list_head->next;
     } else {
-        linked_list_previous->next = linked_list_current->next;
+        linked_list_current->prev->next = linked_list_current->next;
+        if (linked_list_current == linked_list_tail) {
+            linked_list_tail = linked_list_tail->prev;
+        } else {
+            linked_list_current->next->prev = linked_list_current->prev;
+        }
     }
-
+    free(linked_list_current);
     return;
 }
 
