@@ -13,7 +13,7 @@
  *
  * File Description:
  *
- *      This is the header file containing the function declarations and
+ *      This header file contains the function declarations and
  *      variables used in the LinkedList.c file.
  *
  * File Name:
@@ -59,10 +59,14 @@ typedef struct ScannedDevice {
 typedef struct LinkedListNode {
     ScannedDevice data;
     struct LinkedListNode *next;
+    struct LinkedListNode *prev;
 } LinkedListNode;
 
 /* Pointer to the LinkedListNode at the head of the linked list */
 extern LinkedListNode *linked_list_head;
+
+/* Pointer to the LinkedListNode at the end of the linked list */
+extern LinkedListNode *linked_list_tail;
 
 /* Pointer to current LinkedListNode of the linked list */
 extern LinkedListNode *linked_list_current;
@@ -71,7 +75,8 @@ extern LinkedListNode *linked_list_current;
  * FUNCTIONS
  */
 
-void insert_first(ScannedDevice data);
+void insert_first(ScannedDevice data, int mac_address_length);
+void insert_last(ScannedDevice data, int mac_address_length);
 void delete_node(ScannedDevice data);
 int get_linked_list_length();
 void print_linked_list();
