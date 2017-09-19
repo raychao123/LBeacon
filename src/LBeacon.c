@@ -60,89 +60,88 @@
  *  config - Config struct including filepath, coordinates, etc.
  */
 Config get_config(char *filename) {
-    /* Return value that contains a struct of all config information */
-    Config config;
+	/* Return value that contains a struct of all config information */
+	Config config;
 
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        /* Error handling */
-        perror("Error opening file");
-    } else {
-        /* Stores the string of the current line being read */
-        char config_setting[CONFIG_BUFFER_SIZE];
+	FILE *file = fopen(filename, "r");
+	if (file == NULL) {
+		/* Error handling */
+		perror("Error opening file");
+	}
+	else {
+		/* Create spaces for storing the string of the current line being read */
+		char config_setting[CONFIG_BUFFER_SIZE];
+		char *config_message;
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.coordinate_X, config_message, strlen(config_message));
+		config.coordinate_X_length = strlen(config_message);
 
-        /* Keeps track of which line is being processed */
-        int line = 0;
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.coordinate_Y, config_message, strlen(config_message));
+		config.coordinate_Y_length = strlen(config_message);
 
-        /* Keep reading each line and store into the config struct */
-        while (fgets(config_setting, sizeof(config_setting), file) != NULL) {
-            char *config_message;
-            config_message = strstr((char *)config_setting, DELIMITER);
-            config_message = config_message + strlen(DELIMITER);
-            switch (line) {
-                case 0:
-                    memcpy(config.coordinate_X, config_message,
-                           strlen(config_message));
-                    config.coordinate_X_length = strlen(config_message);
-                    break;
-                case 1:
-                    memcpy(config.coordinate_Y, config_message,
-                           strlen(config_message));
-                    config.coordinate_Y_length = strlen(config_message);
-                    break;
-                case 2:
-                    memcpy(config.coordinate_Z, config_message,
-                           strlen(config_message));
-                    config.coordinate_Z_length = strlen(config_message);
-                    break;
-                case 3:
-                    memcpy(config.filename, config_message,
-                           strlen(config_message));
-                    config.filename_length = strlen(config_message);
-                    break;
-                case 4:
-                    memcpy(config.filepath, config_message,
-                           strlen(config_message));
-                    config.filepath_length = strlen(config_message);
-                    break;
-                case 5:
-                    memcpy(config.maximum_number_of_devices, config_message,
-                           strlen(config_message));
-                    config.maximum_number_of_devices_length =
-                        strlen(config_message);
-                    break;
-                case 6:
-                    memcpy(config.number_of_groups, config_message,
-                           strlen(config_message));
-                    config.number_of_groups_length = strlen(config_message);
-                    break;
-                case 7:
-                    memcpy(config.number_of_messages, config_message,
-                           strlen(config_message));
-                    config.number_of_messages_length = strlen(config_message);
-                    break;
-                case 8:
-                    memcpy(config.number_of_push_dongles, config_message,
-                           strlen(config_message));
-                    config.number_of_push_dongles_length =
-                        strlen(config_message);
-                    break;
-                case 9:
-                    memcpy(config.rssi_coverage, config_message,
-                           strlen(config_message));
-                    config.rssi_coverage_length = strlen(config_message);
-                    break;
-                case 10:
-                    memcpy(config.uuid, config_message, strlen(config_message));
-                    config.uuid_length = strlen(config_message);
-                    break;
-            }
-            line++;
-        }
-        fclose(file);
-    }
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.coordinate_Z, config_message, strlen(config_message));
+		config.coordinate_Z_length = strlen(config_message);
 
-    return config;
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.filename, config_message, strlen(config_message));
+		config.filename_length = strlen(config_message);
+
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.filepath, config_message, strlen(config_message));
+		config.filepath_length = strlen(config_message);
+
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.maximum_number_of_devices, config_message, strlen(config_message));
+		config.maximum_number_of_devices_length = strlen(config_message);
+
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.number_of_groups, config_message, strlen(config_message));
+		config.number_of_groups_length = strlen(config_message);
+
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.number_of_messages, config_message, strlen(config_message));
+		config.number_of_messages_length = strlen(config_message);
+
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.number_of_push_dongles, config_message, strlen(config_message));
+		config.number_of_push_dongles_length = strlen(config_message);
+
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.rssi_coverage, config_message, strlen(config_message));
+		config.rssi_coverage_length = strlen(config_message);
+
+		fgets(config_setting, sizeof(config_setting), file);
+		config_message = strstr((char *)config_setting, DELIMITER);
+		config_message = config_message + strlen(DELIMITER);
+		memcpy(config.uuid, config_message, strlen(config_message));
+		config.uuid_length = strlen(config_message);
+
+		fclose(file);
+	}
+
+	return config;
 }
 
 /*
