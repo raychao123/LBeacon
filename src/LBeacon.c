@@ -280,7 +280,7 @@ void *queue_to_array() {
     int device_id;
 
 
-    while (start_scanning_cancelled = false) {
+    while (ready_to_work = false) {
         
         /* Go through the array of ThreadStatus */
         for (device_id = 0; device_id < maximum_number_of_devices;
@@ -347,7 +347,7 @@ void *send_file(void *id) {
     int block_id;
 
 
-    while (start_scanning_cancelled = false) {
+    while (send_message_cancelled = false) {
         for (device_id = 0; device_id < maximum_number_of_devices;
             device_id++) {
             if (device_id == thread_id &&
@@ -369,18 +369,22 @@ void *send_file(void *id) {
                     }
                 }
 
-                /* Open socket and use current time as start time to determine
-                * how long it takes to send the message to the device */
+                /* Open socket and use current time as start time to keep 
+                 * of how long has taken to send the message to the device */
                 socket = hci_open_dev(dongle_device_id);
                 if (0 > dongle_device_id || 0 > socket) {
                     /* Error handling */
                     perror("Error opening socket");
-                    strncpy(g_idle_handler[device_id].scanned_mac_address, "0",
-                        LENGTH_OF_MAC_ADDRESS);
+                    strncpy(
+                            g_idle_handler[device_id].scanned_mac_address,
+                            "0",
+                            LENGTH_OF_MAC_ADDRESS);
+
                     g_idle_handler[device_id].idle = -1;
                     g_idle_handler[device_id].is_waiting_to_send = false;
                     break;
                 }
+
                 long long start = get_system_time();
                 address = (char *)g_idle_handler[device_id].scanned_mac_address;
                 channel = obexftp_browse_bt_push(address);
@@ -400,11 +404,15 @@ void *send_file(void *id) {
                 client = obexftp_open(OBEX_TRANS_BLUETOOTH, NULL, NULL, NULL);
                 long long end = get_system_time();
                 printf("Time to open connection: %lld ms\n", end - start);
+                
                 if (client == NULL) {
                     /* Error handling */
                     perror("Error opening obexftp client");
-                    strncpy(g_idle_handler[device_id].scanned_mac_address, "0",
-                        LENGTH_OF_MAC_ADDRESS);
+                    strncpy(
+                            g_idle_handler[device_id].scanned_mac_address,
+                            "0",
+                            LENGTH_OF_MAC_ADDRESS);
+
                     g_idle_handler[device_id].idle = -1;
                     g_idle_handler[device_id].is_waiting_to_send = false;
                     close(socket);
@@ -421,8 +429,11 @@ void *send_file(void *id) {
                     perror("Error connecting to obexftp device");
                     obexftp_close(client);
                     client = NULL;
-                    strncpy(g_idle_handler[device_id].scanned_mac_address, "0",
-                        LENGTH_OF_MAC_ADDRESS);
+                    strncpy(
+                            g_idle_handler[device_id].scanned_mac_address,
+                            "0",
+                            LENGTH_OF_MAC_ADDRESS);
+                    
                     g_idle_handler[device_id].idle = -1;
                     g_idle_handler[device_id].is_waiting_to_send = false;
                     close(socket);
@@ -666,7 +677,7 @@ void start_scanning() {
 void *cleanup_scanned_list(void) {
     
 
-    while (start_scanning_cancelled = false) {
+    while (ready_to_work = true) {
         
         struct List_Entry *listptrs;
         Node *temp;        
@@ -1246,7 +1257,7 @@ int main(int argc, char **argv) {
 
 
     /* Start scanning for bluetooth devices */
-    while (start_scanning_cancelled == false) {
+    while (ready_to_work == true) {
         start_scanning();
     }
 
