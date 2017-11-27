@@ -286,7 +286,7 @@ void *queue_to_array() {
         for (device_id = 0; device_id < maximum_number_of_devices;
             device_id++) {
         
-            char *address = get_first_entry(waiting_list);
+            char *address = get_head_entry(waiting_list);
             
             /* Remove from waiting_list and add MAC address to the array when a 
              * thread becomes available */
@@ -295,7 +295,7 @@ void *queue_to_array() {
                         address,
                         LENGTH_OF_MAC_ADDRESS);
 
-				list_remove_head(waiting_list);
+                list_remove_head(waiting_list);
                 g_idle_handler[device_id].idle = device_id;
                 g_idle_handler[device_id].is_waiting_to_send = true;
             }

@@ -145,8 +145,7 @@ unsigned g_most_recent_timestamp_of_tracking_file = 0;
 /* Number of lines in the output file used for tracking scanned devices */
 int g_size_of_file = 0;
 
-/* An array of struct for storing information and status of each thread */
-ThreadStatus *g_idle_handler;
+
 
 /*Two list of struct for recording scanned devices */
 List_Entry *scanned_list;
@@ -205,8 +204,8 @@ typedef struct Config {
     /* A string representation of the message file name's file path */
     char file_path[CONFIG_BUFFER_SIZE];
 
-	/* A string representation of the maximum number of devices to be
-	handled by all push dongles */
+    /* A string representation of the maximum number of devices to be
+    handled by all push dongles */
     char maximum_number_of_devices[CONFIG_BUFFER_SIZE];
 
     /* A string representation of number of message groups */
@@ -267,7 +266,8 @@ typedef struct ThreadStatus {
     bool is_waiting_to_send;
 } ThreadStatus;
 
-
+/* An array of struct for storing information and status of each thread */
+ThreadStatus *g_idle_handler;
 
 /*
 * FUNCTIONS
