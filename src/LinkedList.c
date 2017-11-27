@@ -222,7 +222,7 @@ struct Node *insert_node_tail(List_Entry *entry) {
 
 
 /*
-*  remove_node:
+*  list_remove_node:
 *
 *  This function calls the function of remove_node_ to delete a node in the
 *  list 
@@ -237,7 +237,7 @@ struct Node *insert_node_tail(List_Entry *entry) {
 *
 *  None
 */
-void remove_node(Node *removed_node) {
+void list_remove_node(Node *removed_node) {
 
     remove_node_(&removed_node->ptrs);
     free(removed_node);
@@ -245,7 +245,7 @@ void remove_node(Node *removed_node) {
 }
 
 /*
-*  remove_head:
+*  list_remove_head:
 *
 *  This function calls the function of remove_node_ to delete a node at the
 *  first of the list and release the memory.
@@ -259,7 +259,7 @@ void remove_node(Node *removed_node) {
 *
 *  None
 */
-void remove_head(List_Entry *entry) {
+void list_remove_head(List_Entry *entry) {
     printf("Removing \n");
     struct Node *node = ListEntry(entry->next, Node, ptrs);
     remove_node_(entry->next);

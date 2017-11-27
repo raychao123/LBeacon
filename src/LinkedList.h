@@ -46,6 +46,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <LBeacon.h>
 
 /*
 * CONSTANTS
@@ -55,7 +56,7 @@
 #define offsetof(type, member) ((size_t) &((type *)0)->member)
 
 /*Macro for geting the master struct from the sub struct */
-#define ListEntry(ptr,type,member) ((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
+#define ListEntry(ptr,type,member)((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
 
 /*Macro for the method going through the list structure */
 #define list_for_each(pos, head) for (pos = (head)->next; pos != (head); pos = pos->next)
@@ -94,10 +95,10 @@ void list_insert_head(List_Entry *new_node, List_Entry *head);
 void list_insert_tail(List_Entry *new_node, List_Entry *head);
 void remove_node__(List_Entry *prev, List_Entry *next);
 void remove_node_(List_Entry *removed_node_ptrs);
-struct Node *insert_node_head(List_Entry *entry);
-struct Node *insert_node_tail(List_Entry *entry);
-void remove_node(Node *removed_node);
-void remove_head(List_Entry *entry);
+struct Node *insert_node_head(List_Entry *entry); 
+struct Node *insert_node_tail(List_Entry *entry); 
+void list_remove_node(Node *removed_node); 
+void list_remove_head(List_Entry *entry); 
 void remove_last(List_Entry *entry);
 void print_list(List_Entry *entry);
 char *get_head_entry(List_Entry *entry);
