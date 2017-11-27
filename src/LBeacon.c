@@ -247,8 +247,8 @@ void send_to_push_dongle(bdaddr_t *bluetooth_device_address) {
         ScannedDevice data;
         data.initial_scanned_time = get_system_time();
         strncpy(data.scanned_mac_address, address, LENGTH_OF_MAC_ADDRESS); 
-        Node *node_s = add_node_first(scanned_list);
-        Node *node_w = add_node_first(waiting_list);
+        Node *node_s = insert_node_head(scanned_list);
+        Node *node_w = insert_node_head(waiting_list);
         node_s->data = &data;
         node_w->data = &data;
         
@@ -295,7 +295,7 @@ void *queue_to_array() {
                         address,
                         LENGTH_OF_MAC_ADDRESS);
 
-                remove_first(waiting_list); 
+				list_remove_head(waiting_list);
                 g_idle_handler[device_id].idle = device_id;
                 g_idle_handler[device_id].is_waiting_to_send = true;
             }
@@ -690,7 +690,7 @@ void *cleanup_scanned_list(void) {
             if (get_system_time() - temp_data->initial_scanned_time > TIMEOUT) {
                 printf("Removed %s from scanned list\n",
                     temp_data->scanned_mac_address[0]);
-                remove_node(temp);
+                list_remove_node(temp);
             }
             else {
                 break;
