@@ -304,3 +304,14 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
 int disable_advertising();
 void *ble_beacon(void *beacon_location);
 void startThread(pthread_t threads ,void * (*run)(void*), void *arg);
+
+/* The function calls the function of list_insert_ to add a new node at the
+* first of the list.*/
+extern inline void list_insert_head(List_Entry *new_node, List_Entry *head);
+
+/* The function calls the function of remove_node__ to delete a node in the
+* list.*/
+extern inline void list_remove_node(List_Entry *removed_node_ptrs);
+
+/* The function returns the length of the list. */
+extern inline int get_list_length(List_Entry *entry);
