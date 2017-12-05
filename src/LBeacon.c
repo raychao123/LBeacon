@@ -646,19 +646,22 @@ void print_RSSI_value(bdaddr_t *bluetooth_device_address, bool has_rssi,
 *  None
 */
 void start_scanning() {
-    struct hci_filter filter;                       /*Filter for controling the events*/
-    struct pollfd output;                           /*A callback event from the socket */
-    unsigned char event_buffer[HCI_MAX_EVENT_SIZE]; /*A buffer for the callback event*/
-    unsigned char *event_buffer_pointer;            /*A pointer for the event buffer */
-    hci_event_hdr *event_handler;                   /*Record the event type */
-    inquiry_cp inquiry_copy;                        /*Storing the message from the socket */
-    inquiry_info_with_rssi *info_rssi;              /*Record an EVT_INQUIRY_RESULT_WITH_RSSI message */
-    inquiry_info *info;                             /*Record an EVT_INQUIRY_RESULT message */
-    int event_buffer_length;                        /*Length of the event buffer */
-    int dongle_device_id = 0;                       /*Number of the dongle */
-    int socket = 0;                                 /*Number of the socket */
-    int results;                                    /*Return the result form the socket */
-    int results_id;                                 /*ID of the result */
+    struct hci_filter filter; /*Filter for controling the events*/
+    struct pollfd output; /*A callback event from the socket */
+    unsigned char event_buffer[HCI_MAX_EVENT_SIZE]; /*A buffer for the 
+													 *callback event*/
+    unsigned char *event_buffer_pointer; /*A pointer for the event buffer */
+    hci_event_hdr *event_handler; /*Record the event type */
+    inquiry_cp inquiry_copy; /*Storing the message from the socket */
+    inquiry_info_with_rssi *info_rssi; /*Record an 
+									    *EVT_INQUIRY_RESULT_WITH_RSSI message
+										*/
+    inquiry_info *info; /*Record an EVT_INQUIRY_RESULT message */
+    int event_buffer_length; /*Length of the event buffer */
+    int dongle_device_id = 0; /*dongle id */
+    int socket = 0; /*Number of the socket */
+    int results; /*Return the result form the socket */
+    int results_id; /*ID of the result */
 
     /* Open Bluetooth device */
     socket = hci_open_dev(dongle_device_id);
