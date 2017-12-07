@@ -284,6 +284,28 @@ typedef struct ScannedDevice {
 /* An array of struct for storing information and status of each thread */
 ThreadStatus *g_idle_handler;
 
+
+
+/*
+ * EXTERN STRUCTS
+ */
+
+/*In sys/poll.h, The struct for controlling the events*/
+extern struct pollfd {
+	int   fd;         /* file descriptor */
+	short events;     /* requested events */
+	short revents;    /* returned events */
+};
+
+/*In hci_sock.h, The struct for callback event from the socket*/
+extern struct hci_filter {
+	unsigned long type_mask;
+	unsigned long event_mask[2];
+	__le16 opcode;
+};
+
+
+
 /*
 * FUNCTIONS
 */
@@ -310,6 +332,12 @@ void *ble_beacon(void *beacon_location);
 void startThread(pthread_t threads, void * (*run)(void*), void *arg);
 void cleanup_exit();
 
+
+
+/*
+* EXTERN FUNCTIONS
+*/
+
 /* The function calls the function of list_insert_ to add a new node at the
 * first of the list.*/
 extern void list_insert_head(List_Entry *new_node, List_Entry *head);
@@ -320,8 +348,6 @@ extern void list_remove_node(List_Entry *removed_node_ptrs);
 
 /* The function returns the length of the list. */
 extern int get_list_length(List_Entry *entry);
-
-
 
 /*In dirent.h, Open a directory stream corresponding */
 extern DIR *opendir(const char *dirname);
@@ -344,7 +370,7 @@ extern void free(void* ptr);
 extern int hci_open_dev(int dev_id);
 
 /*In bluetooth/hci_lib.h, Clear filter*/
-extern void hci_filter_clear(struct hci_filter *    f);
+extern void hci_filter_clear(struct hci_filter *  f);
 
 /*In bluetooth/hci_lib.h, Filter set ptype */
 extern void hci_filter_set_ptype(int t, struct hci_filter *f);
