@@ -129,7 +129,17 @@
 /* Length of a Bluetooth MAC address */
 #define LENGTH_OF_MAC_ADDRESS 18
 
+/* Timeout of hci_send_req  */
+#define HCI_SEND_REQUEST_TIMEOUT 1000
 
+/* Time interval in seconds for Send to gateway */
+#define TIME_INTERVAL_OF_SEND_TO_GATEWAY 300
+
+/* Time interval for which the LBeacon can */
+#define ADVERTISING_INTERVAL 300
+
+/* RSSI value of the bluetooth device */
+#define RSSI_VALUE 20
 
 /*
 * GLOBAL VARIABLES
