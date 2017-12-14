@@ -144,6 +144,39 @@
 
 
 /*
+* GLOBAL VARIABLES
+*/
+
+/* The path of the object push file */
+char *g_push_file_path;
+
+/* The first timestamp of the output file used for tracking scanned
+* devices */
+unsigned g_initial_timestamp_of_tracking_file = 0;
+
+/* The most recent time of the output file used for tracking scanned
+* devices */
+unsigned g_most_recent_timestamp_of_tracking_file = 0;
+
+/* Number of lines in the output file used for tracking scanned devices */
+int g_size_of_file = 0;
+
+
+
+/*Two list of struct for recording scanned devices */
+List_Entry *scanned_list;
+List_Entry *waiting_list;
+
+/*The number of error code */
+extern int errno;
+
+/* Two global flags for threads */
+bool ready_to_work = true;
+bool send_message_cancelled = false;
+
+
+
+/*
 * UNION
 */
 
@@ -240,6 +273,9 @@ typedef struct Config {
     int uuid_length;
 } Config;
 
+/* Struct for storing config information from the input file */
+Config g_config;
+
 
 typedef struct ThreadStatus {
     char scanned_mac_address[LENGTH_OF_MAC_ADDRESS];
@@ -256,6 +292,7 @@ typedef struct ScannedDevice {
 } ScannedDevice;
 
 
+<<<<<<< HEAD
 
 /*
 * ERROR CODE
@@ -307,42 +344,31 @@ extern struct pollfd;
 
 /*In hci_sock.h, the struct for callback event from the socket.*/
 extern struct hci_filter;
-
-
-
-
-/*
-* GLOBAL VARIABLES
-*/
-
-/* The path of the object push file */
-char *g_push_file_path;
-
-/* The first timestamp of the output file used for tracking scanned
-* devices */
-unsigned g_initial_timestamp_of_tracking_file = 0;
-
-/* The most recent time of the output file used for tracking scanned
-* devices */
-unsigned g_most_recent_timestamp_of_tracking_file = 0;
-
-/* Number of lines in the output file used for tracking scanned devices */
-int g_size_of_file = 0;
-
-/* Struct for storing config information from the input file */
-Config g_config;
-
+=======
+>>>>>>> parent of 15e1f1a... free resourses
 
 /* An array of struct for storing information and status of each thread */
 ThreadStatus *g_idle_handler;
 
-/*Two list of struct for recording scanned devices */
-List_Entry *scanned_list;
-List_Entry *waiting_list;
 
-/* Two global flags for threads */
-bool ready_to_work = true;
-bool send_message_cancelled = false;
+
+/*
+ * EXTERN STRUCTS
+ */
+
+/*In sys/poll.h, The struct for controlling the events*/
+extern struct pollfd {
+	int   fd;         /* file descriptor */
+	short events;     /* requested events */
+	short revents;    /* returned events */
+};
+
+/*In hci_sock.h, The struct for callback event from the socket*/
+extern struct hci_filter {
+	unsigned long type_mask;
+	unsigned long event_mask[2];
+	__le16 opcode;
+};
 
 
 
@@ -380,8 +406,9 @@ void startThread(pthread_t threads, void * (*run)(void*), void *arg);
 void cleanup_exit();
 
 
+
 /*
-* EXTERNAL FUNCTIONS
+* EXTERN FUNCTIONS
 */
 
 /* The function calls the function of list_insert_ to add a new node at the
@@ -416,7 +443,7 @@ extern void free(void* ptr);
 extern int hci_open_dev(int dev_id);
 
 /*In bluetooth/hci_lib.h, Clear filter*/
-extern void hci_filter_clear(struct hci_filter *    f);
+extern void hci_filter_clear(struct hci_filter *  f);
 
 /*In bluetooth/hci_lib.h, Filter set ptype */
 extern void hci_filter_set_ptype(int t, struct hci_filter *f);
