@@ -466,11 +466,7 @@ void *queue_to_array() {
 void *send_file(void *dongle_id) {
     
     obexftp_client_t *client = NULL; /* ObexFTP client */
-<<<<<<< HEAD
     int dongle_device_id = dongle_id;        /* Device ID of dongle */
-=======
-    int dongle_device_id = 0;        /* Device ID of a dongle */
->>>>>>> parent of 15e1f1a... free resourses
     int socket;                      /* ObexFTP client's socket */
     int channel = -1;                /* ObexFTP channel */
     char *address = NULL;            /* Scanned MAC address */
@@ -608,22 +604,6 @@ void *send_file(void *dongle_id) {
     pthread_exit(NULL);
     return;
 
-<<<<<<< HEAD
-=======
-				/* Leave the socket open */
-                obexftp_close(client);
-                client = NULL;
-                strncpy(g_idle_handler[device_id].scanned_mac_address,
-                        "0",
-                        LENGTH_OF_MAC_ADDRESS);
-                
-                g_idle_handler[device_id].idle = true;
-                g_idle_handler[device_id].is_waiting_to_send = false;
-                close(socket);
-            }
-        }
-    }
->>>>>>> parent of 15e1f1a... free resourses
 }
 
 /*
@@ -705,14 +685,8 @@ void start_scanning() {
     int dongle_device_id = 0; /*dongle id */
     int socket = 0; /*Number of the socket */
     int results; /*Return the result form the socket */
-<<<<<<< HEAD
     int results_id; /*ID of the result */       
 
-=======
-    int results_id; /*ID of the result */
-
-    
->>>>>>> parent of 15e1f1a... free resourses
     /* Open Bluetooth device */
     socket = hci_open_dev(dongle_device_id);
     
@@ -921,10 +895,7 @@ void *cleanup_scanned_list(void) {
 *
 *  This function tracks the MAC addresses of scanned bluetooth devices under
 *  the beacon. An output file will contain for each timestamp and the MAC
-*  addresses of the scanned bluetooth devices at the given timestamp. Format
-*  timestamp and MAC addresses into a string discovered and append new line
-*  to end of  file. " - " is used to separate timestamp with MAC address and
-*  ", " is used to separate each MAC address.
+*  addresses of the scanned bluetooth devices at the given timestamp.
 *
 *  Parameters:
 *
@@ -1017,16 +988,10 @@ void track_devices(bdaddr_t *bluetooth_device_address, char *file_name) {
         fclose(output);
     }
 
-<<<<<<< HEAD
     /* Send to gateway every TIME_INTERVAL_OF_SEND_TO_GATEWAY minutes */
     if (TIME_INTERVAL_OF_SEND_TO_GATEWAY <=
         timestamp - g_initial_timestamp_of_tracking_file) {
         
-=======
-    /* Send to gateway every TIME_INTERVAL_OF_SEND_TO_GATEWAY sec*/
-    if (TIME_INTERVAL_OF_SEND_TO_GATEWAY <=
-		timestamp - g_initial_timestamp_of_tracking_file) {
->>>>>>> parent of 15e1f1a... free resourses
         g_size_of_file = 0;
         g_most_recent_timestamp_of_tracking_file = 0;
         /* @todo: send to gateway function */
@@ -1081,8 +1046,8 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     request.rparam = &status;
     request.rlen = 1;
 
-    int return_value = hci_send_req(device_handle, &request,
-									HCI_SEND_REQUEST_TIMEOUT);
+     int return_value = hci_send_req(device_handle, &request,
+                                    HCI_SEND_REQUEST_TIMEOUT);
     if (return_value < 0) {
        
         /* Error handling */
@@ -1105,8 +1070,8 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     request.rparam = &status;
     request.rlen = 1;
 
-    return_value = hci_send_req(device_handle, &request,
-								HCI_SEND_REQUEST_TIMEOUT);
+     return_value = hci_send_req(device_handle, &request,
+                                HCI_SEND_REQUEST_TIMEOUT);
 
     if (return_value < 0) {
        
@@ -1184,7 +1149,7 @@ int enable_advertising(int advertising_interval, char *advertising_uuid,
     request.rlen = 1;
 
     return_value = hci_send_req(device_handle, &request,
-								HCI_SEND_REQUEST_TIMEOUT);
+                                HCI_SEND_REQUEST_TIMEOUT);
 
     hci_close_dev(device_handle);
 
@@ -1240,7 +1205,7 @@ int disable_advertising() {
     request.rlen = 1;
 
     int return_value = hci_send_req(device_handle, &request,
-									HCI_SEND_REQUEST_TIMEOUT);
+                                    HCI_SEND_REQUEST_TIMEOUT);
 
     hci_close_dev(device_handle);
 
@@ -1278,9 +1243,10 @@ int disable_advertising() {
 *  None
 */
 void *ble_beacon(void *beacon_location) {
+    
     int enable_advertising_success =
         enable_advertising(ADVERTISING_INTERVAL, beacon_location,
-					       RSSI_VALUE);
+                           RSSI_VALUE);
 
     if (enable_advertising_success == 0) {
         
@@ -1330,7 +1296,8 @@ void cleanup_exit(){
     send_message_cancelled = true;
     free_list(scanned_list);
     free_list(waiting_list);
-    //pthread_exit(NULL);
+    free(g_idle_handler);
+    free(g_push_file_path);
     return;
 
 }
@@ -1376,14 +1343,9 @@ int main(int argc, char **argv) {
     if (g_idle_handler == NULL) {
         
         /* Error handling */
-<<<<<<< HEAD
         perror(strerror(errno));
         cleanup_exit();
         return;
-=======
-        perror("Failed to allocate memory");
-        return -1;
->>>>>>> parent of 15e1f1a... free resourses
     }
 
     /* Initialize each ThreadStatus struct in the array */
